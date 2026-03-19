@@ -79,7 +79,7 @@ export default function HomePage() {
             maxWidth: '540px',
             marginBottom: '2.5rem',
           }}>
-            This diagnostic surfaces the specific gaps in your structure — the ones a creditor's attorney finds first. It takes 5–8 minutes and it's free.
+            This diagnostic exposes the specific gaps in your structure — the vulnerabilities a creditor's attorney identifies before you even know there's a problem. It takes 5–8 minutes and it's free.
           </p>
 
           <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>

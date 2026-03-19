@@ -404,6 +404,53 @@ const QS = [
      {label:"Mix",value:"mix",flags:["FT_CONSTRUCTIVE"],gapPts:6},
      {label:"Not sure",value:"unsure",flags:["FT_CONSTRUCTIVE"],gapPts:6},
    ]},
+  // OFFSHORE QUALIFICATION
+  {id:"active_judgment",section:"Your Exposure Level",
+   question:"Do you currently have a judgment entered against you, or is litigation at a stage where a judgment is likely?",
+   subtext:"A judgment changes everything about what is possible structurally. Domestic planning options narrow significantly once a judgment exists — and offshore structures become a different kind of conversation.",
+   options:[
+     {label:"Yes — a judgment has been entered against me",value:"yes_judgment",flags:["ACTIVE_JUDGMENT","OFFSHORE_URGENT","ACTIVE_LIT"],gapPts:25},
+     {label:"Litigation is active and a judgment is a real possibility",value:"likely",flags:["OFFSHORE_POSSIBLE","ACTIVE_LIT"],gapPts:16},
+     {label:"No judgment and no active litigation",value:"no",flags:[]},
+   ]},
+  {id:"liquid_assets",section:"Your Exposure Level",
+   question:"Do you have significant liquid assets — cash, brokerage accounts, or investments — outside of real estate and retirement accounts?",
+   subtext:"Liquid assets are the primary target in judgment enforcement and the primary asset class for offshore planning. Real estate and retirement accounts are addressed through different tools.",
+   showIf:a=>a.net_worth==="5_10m"||a.net_worth==="o10m"||a.active_judgment==="yes_judgment"||a.active_judgment==="likely",
+   options:[
+     {label:"Yes — over $1M in liquid assets",value:"over1m",flags:["LIQUID_SIGNIFICANT","OFFSHORE_QUALIFIED"]},
+     {label:"Yes — $500K to $1M",value:"500k_1m",flags:["LIQUID_MODERATE"]},
+     {label:"Under $500K liquid — most of my wealth is in real estate or business equity",value:"under500k",flags:[]},
+     {label:"Not sure",value:"unsure",flags:[]},
+   ]},
+  {id:"domestic_exhausted",section:"Your Exposure Level",
+   question:"Have you fully maximized Florida's domestic protections — homestead, TBE titling, retirement accounts, life insurance cash value, properly structured LLCs?",
+   subtext:"Offshore planning makes sense only after domestic protections are maximized. An offshore trust on top of a weak domestic structure is an expensive solution to a problem that could be solved more simply.",
+   showIf:a=>a.liquid_assets==="over1m"||a.active_judgment==="yes_judgment",
+   options:[
+     {label:"Yes — domestic planning is fully in place and reviewed",value:"yes",flags:[]},
+     {label:"Partially — some domestic protections but gaps remain",value:"partial",flags:["DOMESTIC_GAPS"]},
+     {label:"No — domestic planning has not been fully addressed",value:"no",flags:["DOMESTIC_GAPS","OFFSHORE_PREMATURE"]},
+     {label:"Not sure what domestic options are available",value:"unsure",flags:["DOMESTIC_GAPS"]},
+   ]},
+  {id:"offshore_openness",section:"Your Exposure Level",
+   question:"Are you open to the concept of assets held in a trust or LLC outside the United States, under a foreign trustee, if it provided significantly stronger protection?",
+   subtext:"Offshore planning is not appropriate for everyone — it requires specific financial thresholds, compliance obligations, and comfort with international structures. It is also the most powerful creditor protection tool available when the profile warrants it.",
+   showIf:a=>a.liquid_assets==="over1m"||a.active_judgment==="yes_judgment",
+   options:[
+     {label:"Yes — I am open to offshore structures if they make sense for my situation",value:"yes",flags:["OFFSHORE_OPEN"]},
+     {label:"Possibly — I want to understand the options before deciding",value:"maybe",flags:["OFFSHORE_OPEN"]},
+     {label:"No — I prefer to keep everything domestic",value:"no",flags:[]},
+   ]},
+  {id:"creditor_type",section:"Your Exposure Level",
+   question:"Is your primary concern a specific known creditor or lawsuit, or general future liability from your profession or business?",
+   subtext:"The answer determines which strategies are available and which are foreclosed. Once a specific creditor exists, the fraudulent transfer analysis changes everything.",
+   showIf:a=>a.offshore_openness==="yes"||a.offshore_openness==="maybe"||a.active_judgment==="yes_judgment",
+   options:[
+     {label:"A specific known creditor, judgment, or active lawsuit",value:"specific",flags:["SPECIFIC_CREDITOR","OFFSHORE_URGENT"]},
+     {label:"General professional or business liability — no specific creditor",value:"general",flags:["GENERAL_EXPOSURE"]},
+     {label:"Both — I have an active situation and ongoing future exposure",value:"both",flags:["SPECIFIC_CREDITOR","GENERAL_EXPOSURE","OFFSHORE_URGENT"]},
+   ]},
   // FOREIGN
   {id:"foreign",section:"Your Assets",
    question:"Do you hold any assets, accounts, or business interests outside the United States?",
@@ -500,155 +547,375 @@ function analyze(answers) {
     if (opt.flags) opt.flags.forEach(f=>F.add(f));
   });
 
+  // Net worth multiplier applies only to gap points
   const nwOpt = QS.find(q=>q.id==="net_worth")?.options.find(o=>o.value===answers.net_worth);
   const nwM = nwOpt?.nwM||1.0;
   gapPts = Math.round(gapPts * nwM);
   const score = Math.min(100, gapPts);
 
-  let tier, tColor, tLabel;
-  if (score<=18){tier=1;tColor=C.green;tLabel="STRUCTURED";}
-  else if (score<=42){tier=2;tColor=C.yellow;tLabel="GAPS PRESENT";}
-  else if (score<=68){tier=3;tColor=C.accent;tLabel="SIGNIFICANTLY EXPOSED";}
-  else{tier=4;tColor=C.red;tLabel="CRITICAL";}
+  // Tier
+  let tier, tColor, tLabel, tDesc;
+  if(score<=18){
+    tier=1;tColor=C.green;tLabel="STRUCTURED";
+    tDesc="Your current structure shows meaningful baseline protection across the areas we reviewed. This does not mean there are no gaps — it means the critical failures that create immediate creditor vulnerability are not present. A formal attorney review would confirm what is working and what should be monitored as your situation evolves.";
+  } else if(score<=42){
+    tier=2;tColor=C.yellow;tLabel="GAPS PRESENT";
+    tDesc="You have real structural vulnerabilities in specific areas identified below. These gaps will not announce themselves — they surface when a creditor event forces the issue. A determined plaintiff's attorney reviewing your public records would have at least one viable legal theory to pursue your personal assets right now.";
+  } else if(score<=68){
+    tier=3;tColor=C.accent;tLabel="SIGNIFICANTLY EXPOSED";
+    tDesc="Multiple structural vulnerabilities exist across your profile. A creditor's attorney reviewing your situation would have several independent legal theories to pursue your personal assets — and would not need all of them to succeed. The findings below identify specifically what is exposed and why. Most can be corrected before a triggering event occurs. After one, your options narrow significantly.";
+  } else {
+    tier=4;tColor=C.red;tLabel="CRITICAL";
+    tDesc="Your current structure has critical failures across multiple dimensions. A determined creditor's attorney would find significant exposed assets through straightforward legal procedures — no exotic theories required. Some of what you've built to protect yourself may be creating additional liability. Immediate professional review is not a suggestion at this tier. It is the difference between having options and not having them.";
+  }
 
   // Urgency
-  let urgency,uLabel,uColor;
-  if(F.has("ACTIVE_LIT")||F.has("WINDOW_CLOSED")||F.has("PAYROLL_CRITICAL")){urgency="closing";uLabel="CLOSING";uColor=C.red;}
-  else if(F.has("FOUNDING_CASE")||F.has("BADGES_FRAUD")||F.has("LIQUIDITY_EVENT")||F.has("DIVORCE_RISK")||score>=50){urgency="narrowing";uLabel="NARROWING";uColor=C.yellow;}
-  else{urgency="open";uLabel="OPEN";uColor=C.green;}
+  let urgency,uLabel,uColor,uDesc;
+  if(F.has("ACTIVE_LIT")||F.has("WINDOW_CLOSED")||F.has("PAYROLL_CRITICAL")||F.has("ACTIVE_JUDGMENT")){
+    urgency="closing";uLabel="CLOSING";uColor=C.red;
+    uDesc="Active litigation or a judgment is present. Once a lawsuit is filed, most protective asset transfers become presumptively fraudulent under Florida law. Every day without counsel is a day the opposing side is building their case. The strategies available to you today will not all be available next month.";
+  } else if(F.has("FOUNDING_CASE")||F.has("BADGES_FRAUD")||F.has("LIQUIDITY_EVENT")||F.has("DIVORCE_RISK")||F.has("SPECIFIC_CREDITOR")||score>=50){
+    urgency="narrowing";uLabel="NARROWING";uColor=C.yellow;
+    uDesc="A triggering event, pending transaction, or specific creditor concern is in your profile. The window for proactive planning is open but the conditions that close it are already in motion. Structures put in place now season over time — the same structure put in place after a claim arises faces immediate fraudulent transfer scrutiny.";
+  } else {
+    urgency="open";uLabel="OPEN";uColor=C.green;
+    uDesc="No active triggering events identified. This is the optimal time for structural review — planning done proactively is dramatically more effective and dramatically less expensive than planning done after a creditor event. Structures built today season over time, making them harder to challenge as the years pass.";
+  }
 
-  // Findings
+  // Findings with personal consequence
   const findings=[];
+  const nwLabel = {u500:"under $500K","500_2m":"$500K–$2M","2_5m":"$2M–$5M","5_10m":"$5M–$10M",o10m:"over $10M"}[answers.net_worth]||"your net worth";
 
-  if(F.has("NO_ENTITY"))findings.push({sev:"critical",title:"No Structural Barrier Between You and Creditors",
-    body:"Operating without a formal entity means every business liability is your personal liability — no legal separation exists between what you've built and what a creditor can take. A judgment creditor can immediately pursue your personal bank accounts, investments, and real estate with no additional procedural barrier.",
+  if(F.has("NO_ENTITY"))findings.push({sev:"critical",
+    title:"No Structural Barrier Between You and Creditors",
+    body:"Operating without a formal entity means every business liability is your personal liability. There is no legal separation between what you've built and what a creditor can take.",
+    consequence:`With a net worth of ${nwLabel} and no entity structure, a judgment creditor can immediately levy your personal bank accounts, investment accounts, and real estate through a writ of execution. There is no procedural barrier, no charging order process, and no additional step required. Everything you own outside of Florida's statutory exemptions is directly reachable the day after a judgment is entered.`,
     cite:"Fla. Stat. §48.081; personal liability default rule"});
 
-  if(F.has("SCORP_RISK"))findings.push({sev:"critical",title:"Your Entity Type Provides Zero Charging Order Protection",
-    body:"S-corporation shares and Professional Association interests are directly attachable by personal creditors — a creditor becomes a full shareholder with inspection, accounting, and dissolution rights. Unlike LLC membership interests, there is no charging-order-only remedy. This is the most frequently missed structural error in Florida planning and it is fully correctable.",
+  if(F.has("SCORP_RISK"))findings.push({sev:"critical",
+    title:"Your Entity Type Provides Zero Charging Order Protection",
+    body:"S-corporation shares and Professional Association interests are directly attachable by personal creditors. A judgment creditor becomes a full shareholder with inspection, accounting, and dissolution rights — no charging order required.",
+    consequence:"This means a personal judgment against you — from a car accident, a personal debt, a divorce proceeding, anything unrelated to your business — gives the creditor direct access to your business equity. They do not need to pierce any veil. They can attach your shares, become a co-owner of your practice or business, and use shareholder rights to pressure a buyout. An LLC in the same situation provides charging order protection only — a fundamentally different outcome.",
     cite:"Adkisson & Riser, Asset Protection, Ch. 17, p. 189-194; Fla. Stat. §605.0503 (charging order applies to LLCs only)",
     trap:true, trapLabel:"Structural Misconception Identified"});
 
-  if(F.has("FL_HOMESTEAD_DESTROYED"))findings.push({sev:"critical",title:"Placing Your Home in an LLC Destroyed Your Homestead Protection",
-    body:"Florida's constitutional homestead exemption — unlimited in value — requires ownership by a natural person who permanently resides on the property. Transferring it into an LLC eliminates this protection entirely. A home worth $3M held correctly is untouchable by most creditors. That same home in an LLC is a direct creditor asset. This is correctable with careful title work and reassessment planning.",
+  if(F.has("FL_HOMESTEAD_DESTROYED"))findings.push({sev:"critical",
+    title:"Placing Your Home in an LLC Destroyed Your Homestead Protection",
+    body:"Florida's constitutional homestead exemption requires ownership by a natural person. Transferring your home into an LLC eliminates this protection entirely.",
+    consequence:"Florida's homestead exemption is unlimited in value — a $4M home held correctly is completely untouchable by most creditors. That same home in an LLC is a direct creditor asset subject to levy and forced sale. You took the strongest single protection available under Florida law and traded it for an entity structure that provides weaker, qualified protection. This is correctable, but it requires careful title work, a reassessment event, and addressing any period of improperly claimed homestead exemption under Fla. Stat. §196.011.",
     cite:"Art. X, §4, Fla. Const.; Fla. Stat. §196.031; Snyder v. Davis, 699 So.2d 999 (Fla. 1997)",
     trap:true, trapLabel:"Critical Misconception Identified"});
 
-  if(F.has("REV_TRUST_MYTH"))findings.push({sev:"critical",title:"A Revocable Trust Provides Zero Creditor Protection",
-    body:"A revocable living trust is a probate avoidance tool, not a creditor protection tool. Because you can revoke it at any time, creditors treat those assets as legally yours. Florida courts consistently hold that revocable trust assets are fully reachable. This misconception leads people to believe they are protected when they are completely exposed.",
+  if(F.has("REV_TRUST_MYTH"))findings.push({sev:"critical",
+    title:"A Revocable Trust Provides Zero Creditor Protection",
+    body:"A revocable living trust is a probate avoidance tool. Because you retain the right to revoke it, creditors treat those assets as legally yours under Fla. Stat. §736.0505(1).",
+    consequence:"Every asset you've moved into your revocable trust believing it was protected is fully reachable by a judgment creditor — the same as if it were sitting in your personal name. The trust accomplishes everything it was designed to do for estate planning purposes. It accomplishes nothing for creditor protection. If your primary protective strategy relies on this trust, you currently have no effective creditor protection at all.",
     cite:"Fla. Stat. §736.0505(1); Restatement (Third) of Trusts §25",
     trap:true, trapLabel:"Dangerous Misconception Identified"});
 
-  if(F.has("PAYROLL_TAX")||F.has("PAYROLL_CRITICAL"))findings.push({sev:"critical",title:"Payroll Tax Exposure — Every Asset Is At Risk Including Your Home",
-    body:"The IRS Trust Fund Recovery Penalty (IRC §6672) is personal, 100% of the unpaid amount, non-dischargeable in bankruptcy, and federal preemption overrides every Florida state exemption — including the unlimited homestead. The IRS can force the sale of your Florida home to collect delinquent payroll taxes. No asset protection structure implemented after the fact provides any protection against this liability.",
-    cite:"IRC §6672; U.S. v. Craft, 535 U.S. 274 (2002); United States v. National Bank of Commerce, 472 U.S. 713 (1985)"});
+  if(F.has("PAYROLL_TAX")||F.has("PAYROLL_CRITICAL"))findings.push({sev:"critical",
+    title:"Payroll Tax Exposure — The One Liability That Reaches Your Home",
+    body:"The IRS Trust Fund Recovery Penalty (IRC §6672) is personal, 100%, non-dischargeable in bankruptcy, and federal preemption overrides every Florida state exemption including the homestead.",
+    consequence:"Florida's homestead exemption — unlimited in value — protects your home from virtually every creditor. The IRS is the exception. Under U.S. v. Craft, 535 U.S. 274 (2002), the IRS can force the sale of a Florida homestead to collect delinquent payroll taxes. No asset protection structure — no LLC, no trust, no exempt asset planning — provides any protection against this liability once it exists. There is no cure after the fact. The only protection is prevention, and the only prevention is current 941 compliance.",
+    cite:"IRC §6672; U.S. v. Craft, 535 U.S. 274 (2002)"});
 
-  if(F.has("COMMINGLING")||F.has("VEIL_PIERCE"))findings.push({sev:"critical",title:"Commingling Creates Veil-Piercing Exposure",
-    body:"Courts apply a two-part test: (1) unity of interest — the entity and owner are effectively one; and (2) fundamental inequity — allowing the owner to hide behind the entity. Commingling essentially concedes the first element, reducing the creditor's burden to near zero. Your entity exists on paper but may not exist in court.",
-    cite:"Dania Jai-Alai Palace v. Sykes, 450 So.2d 1114 (Fla. 1984); Adkisson & Riser, Ch. 16, p. 180-181"});
+  if(F.has("COMMINGLING")||F.has("VEIL_PIERCE"))findings.push({sev:"critical",
+    title:"Commingling Has Likely Already Destroyed Your Entity Protection",
+    body:"Florida courts pierce the veil when personal and business finances are intermingled. Commingling essentially concedes the unity-of-interest element of the two-part test established in Dania Jai-Alai Palace v. Sykes.",
+    consequence:"Once a creditor's attorney subpoenas five years of your bank records and demonstrates routine commingling, the entity that was supposed to protect your personal assets may be disregarded entirely by the court. Your personal residence, brokerage accounts, investment properties, and everything else outside of Florida's statutory exemptions becomes exposed — not because your LLC was structured incorrectly, but because it wasn't maintained as a separate legal person. The entity exists on paper but may not exist in court.",
+    cite:"Dania Jai-Alai Palace v. Sykes, 450 So.2d 1114 (Fla. 1984)"});
 
-  if(F.has("FOUNDING_CASE"))findings.push({sev:"critical",title:"Founding Case Risk — Multi-Front Cascade Identified",
-    body:"Your profile shows conditions consistent with Gassman's Founding Case Pattern: payer concentration exceeding 60% means a single audit notice triggers simultaneous payer clawback, personal guarantee enforcement, and practice entity exposure in sequence. Each phase accelerates the next. Once the first audit notice arrives, the sequence cannot be interrupted. The window for structural pre-positioning closes at that moment.",
-    cite:"Gassman, Creditor Protection for Florida Physicians (2020), Ch. 3 — The Founding Case Pattern"});
+  if(F.has("FOUNDING_CASE"))findings.push({sev:"critical",
+    title:"Payer Cascade Risk — Your Practice Has a Single Trigger Point",
+    body:"Payer concentration exceeding 60% in two payers creates the conditions for Gassman's Founding Case Pattern — a multi-front enforcement cascade triggered by a single audit notice.",
+    consequence:"Here is how the cascade runs: A payer audit notice arrives. The payer immediately begins offsetting current payments against the alleged overpayment — your monthly revenue from that payer drops to near zero with no court order required. Fixed costs continue. If the practice cannot make payroll from remaining revenue and borrows payroll taxes, the IRS Trust Fund Recovery Penalty activates — personal, 100%, non-dischargeable, reaches your homestead. Simultaneously, any personal guarantees on practice obligations are called. The sequence cannot be interrupted after Phase 1. Structural pre-positioning must happen before the audit notice arrives — which means now.",
+    cite:"Gassman, Creditor Protection for Florida Physicians (2020), Ch. 3"});
 
-  if(F.has("BADGES_FRAUD")||F.has("FT_CRITICAL"))findings.push({sev:"critical",title:"Post-Litigation Transfers — Creditor Clawback Highly Probable",
-    body:"Under Fla. Stat. §726.105, transfers made with intent to hinder, delay, or defraud a creditor are voidable for 4 years, extended by the discovery rule. A post-litigation transfer satisfies the intent element with near-certainty. Courts infer intent from the 11 badges of fraud; a transfer after a known claim carries at minimum badges 1 (insider), 4 (pending litigation), and 8 (no equivalent value). These transfers can be reversed by court order.",
-    cite:"Fla. Stat. §726.105(1)(a); §726.110(1) (4-year limit + discovery rule); 11 U.S.C. §548(a)(1)(A)"});
+  if(F.has("BADGES_FRAUD")||F.has("FT_CRITICAL"))findings.push({sev:"critical",
+    title:"Recent Transfers Are Likely Reversible by a Creditor",
+    body:"Transfers made after a lawsuit was filed or threatened carry the badges of fraud that courts use to reverse them under Florida's Voidable Transactions Act.",
+    consequence:"A creditor who identifies these transfers in your deed records or UCC filings can file a fraudulent transfer action under Fla. Stat. §726.105 and ask the court to void the transfer — returning the asset to your name where it is directly reachable. The 4-year lookback window is extended by the discovery rule, meaning concealed transfers extend the exposure. Assets you moved believing they were protected may be returned to your personal balance sheet by court order, leaving you with both the original liability and the legal costs of defending the transfer.",
+    cite:"Fla. Stat. §726.105(1)(a); §726.110(1); 11 U.S.C. §548(a)(1)(A)"});
 
-  if(F.has("TAIL_GAP"))findings.push({sev:"high",title:"Malpractice Coverage Gap — Claims-Made Without Confirmed Tail",
-    body:"A claims-made policy covers only claims filed while the policy is active. When you retire, switch carriers, or your practice closes, any claim from a prior procedure filed after the policy lapses is completely uninsured. Tail coverage must be explicitly arranged and confirmed in writing. Most physicians discover this gap when it is too late to correct it.",
+  if(F.has("ACTIVE_JUDGMENT"))findings.push({sev:"critical",
+    title:"Judgment Entered — Domestic Transfer Options Are Closed",
+    body:"Once a judgment is entered, most protective transfers of assets face immediate fraudulent transfer scrutiny. The standard 4-year lookback window is irrelevant — transfers made with a known creditor are analyzed under actual fraud theory with no time limitation in some circumstances.",
+    consequence:"Your situation requires immediate counsel — not to plan, but to assess what can still be done without creating additional liability. Certain domestic strategies remain viable even post-judgment: maximizing exempt assets already in your name, restructuring compensation arrangements, and evaluating whether offshore structures are appropriate given the specific creditor and judgment amount. These options require an attorney who handles post-judgment planning, not just proactive planning. Every day of delay narrows what is available.",
+    cite:"Fla. Stat. §726.105; 11 U.S.C. §548; Alper Law, post-judgment planning framework"});
+
+  if(F.has("TAIL_GAP"))findings.push({sev:"high",
+    title:"Malpractice Coverage Gap — Claims-Made Without Confirmed Tail",
+    body:"A claims-made policy covers only claims filed while the policy is active. Any claim arising from a prior procedure filed after you retire, switch carriers, or close the practice is completely uninsured.",
+    consequence:"A malpractice judgment arising from an uninsured gap period is a personal liability — not a practice liability. If the practice entity is defunct at that point, you personally answer for the full judgment with no insurance and no active entity to buffer the exposure. Tail coverage is not expensive relative to this risk. The cost of discovering the gap at claim time — after the coverage period has closed — is the full amount of the judgment.",
     cite:"Gassman, Creditor Protection for Florida Physicians, Ch. 2 — Catastrophic Error #3"});
 
-  if(F.has("CARRIER_RISK"))findings.push({sev:"high",title:"Malpractice Carrier Financial Strength Not Confirmed",
-    body:"A financially insolvent or non-state-registered carrier means your policy may be worthless when you need it most. Florida requires malpractice carriers to be registered with the Department of Financial Services. An A-rated carrier by AM Best has sufficient reserves; a B-rated or unrated carrier may not. Gassman identifies this as Catastrophic Error #2 — discovered only at claim time.",
+  if(F.has("CARRIER_RISK"))findings.push({sev:"high",
+    title:"Malpractice Carrier Financial Strength Not Confirmed",
+    body:"A financially insolvent or non-state-registered carrier may be unable to pay claims when they arise. Florida requires carrier registration with the Department of Financial Services.",
+    consequence:"If your carrier is insolvent at claim time, the policy is worthless regardless of coverage limits. You are personally responsible for the full judgment. Verifying AM Best rating takes five minutes. Discovering an insolvent carrier after a $3M verdict takes everything you have. Gassman identifies this as Catastrophic Error #2 specifically because it is invisible until it is too late.",
     cite:"Gassman, Creditor Protection for Florida Physicians, Ch. 2; Fla. Stat. §627.357"});
 
-  if(F.has("FBAR_RISK"))findings.push({sev:"high",title:"Foreign Asset Reporting Non-Compliance Creates Enforcement Leverage",
-    body:"FBAR non-compliance carries civil penalties exceeding $10,000 per violation and criminal exposure up to $500,000 and 10 years imprisonment. In judgment enforcement, a creditor's attorney who discovers unreported foreign accounts transforms a negotiable settlement into a collection proceeding backed by federal criminal exposure. The 11th Circuit has held that U.S. courts can subpoena foreign bank records through U.S. branches.",
-    cite:"31 U.S.C. §5314; 31 C.F.R. §1010.350; U.S. v. Bank of Nova Scotia, 740 F.2d 817 (11th Cir. 1984)"});
+  if(F.has("FBAR_RISK"))findings.push({sev:"high",
+    title:"Foreign Asset Reporting Non-Compliance Creates Criminal Leverage",
+    body:"FBAR non-compliance carries civil penalties exceeding $10,000 per violation and criminal penalties up to $500,000 and 10 years imprisonment.",
+    consequence:"In judgment enforcement, a creditor's attorney who discovers unreported foreign accounts through discovery does not just find an asset — they find leverage. Unreported FBAR holdings transform a negotiable settlement into a collection proceeding backed by the credible threat of federal criminal referral. Under U.S. v. Bank of Nova Scotia, U.S. courts have subpoenaed foreign bank records through domestic branches. The foreign account you believed was unreachable may become the most powerful tool in opposing counsel's hands.",
+    cite:"31 U.S.C. §5314; U.S. v. Bank of Nova Scotia, 740 F.2d 817 (11th Cir. 1984)"});
 
-  if(F.has("DAPT_SEASON"))findings.push({sev:"high",title:"Existing Trust May Still Be Inside the Federal 10-Year Lookback Window",
-    body:"A self-settled asset protection trust funded within the last 10 years remains inside the federal lookback window under 11 U.S.C. §548(e). Nevada and South Dakota market 2-year state-law lookbacks — those are real but irrelevant in federal bankruptcy, where the 10-year rule governs. This is the most frequently omitted disclosure in DAPT planning.",
-    cite:"11 U.S.C. §548(e) — 10-year lookback for self-settled trusts; In re Mortensen, 09-90036 (Bankr. D. Alaska 2011)",
+  if(F.has("DAPT_SEASON"))findings.push({sev:"high",
+    title:"Your Existing Trust May Still Be Inside the Federal 10-Year Lookback",
+    body:"Self-settled asset protection trusts funded within the last 10 years remain inside the federal lookback window under 11 U.S.C. §548(e), regardless of state-law seasoning claims.",
+    consequence:"Nevada and South Dakota market 2-year state-law lookbacks. Those are real — but completely irrelevant in federal bankruptcy, where 11 U.S.C. §548(e) governs with a 10-year window. If you funded your DAPT 4 years ago, you have 6 more years of federal exposure on that transfer. A bankruptcy trustee can reach back and reverse it. The trust you believe is protecting your assets may not be protecting them at all for federal purposes. This is the most frequently omitted disclosure in DAPT planning.",
+    cite:"11 U.S.C. §548(e); In re Mortensen, 09-90036 (Bankr. D. Alaska 2011)",
     trap:true, trapLabel:"Planning Gap Identified"});
 
-  if(F.has("GUARANTEE")||F.has("GUARANTEE_CRIT"))findings.push({sev:"high",title:"Personal Guarantees Bypass Your Entire Entity Structure",
-    body:"A personal guarantee is an independent obligation — the creditor holding it does not need to pierce any veil or pursue any equitable theory. You have already consented to personal liability. Every guaranteed obligation must be inventoried, quantified, and factored into your structural planning as a direct exposure item that no LLC, trust, or corporation can block.",
-    cite:"Restatement (Third) of Suretyship & Guaranty §1; personal guarantee as independent obligation"});
+  if(F.has("GUARANTEE")||F.has("GUARANTEE_CRIT"))findings.push({sev:"high",
+    title:"Personal Guarantees Bypass Your Entire Structural Defense",
+    body:"A personal guarantee is an independent legal obligation. The creditor holding it pursues you directly — no veil piercing, no charging order, no equitable theory required.",
+    consequence:`Your personal guarantees represent direct personal liability that exists completely outside your entity structure. If your guarantee total is in the hundreds of thousands or more, that amount is reachable against your personal assets — your home (subject to homestead), your brokerage accounts, your investment properties — regardless of how well your entities are structured. Every personal guarantee must be inventoried, quantified, and factored into your structural plan as a direct line item. It is not a business liability. It is a personal one.`,
+    cite:"Restatement (Third) of Suretyship & Guaranty §1"});
 
-  if(F.has("STARK"))findings.push({sev:"high",title:"Stark Law Documentation Gap — Felony Exposure",
-    body:"The Stark Law (42 U.S.C. §1395nn) prohibits physician self-referral to entities with financial relationships unless specific exceptions apply. Those exceptions require compensation arrangements documented in writing, in advance, quarterly, and consistent with fair market value. Failure to document quarterly in advance is a felony exposure issue, not a technical compliance matter — it creates qui tam relator risk from any informed employee.",
-    cite:"42 U.S.C. §1395nn; 42 C.F.R. §411.357; Gassman, A Practical Guide to Kickback and Self-Referral Laws for Florida Physicians"});
+  if(F.has("STARK"))findings.push({sev:"high",
+    title:"Stark Law Documentation Gap — Felony Exposure, Not a Technicality",
+    body:"Stark Law compensation arrangement exceptions require documentation in writing, in advance, quarterly, at fair market value. Failure is not a compliance issue — it is a potential felony.",
+    consequence:"Any employee who knows about undocumented in-house referral arrangements can file a sealed qui tam complaint under the False Claims Act and receive 15–30% of the government's recovery. The complaint is investigated under seal — you will not know it exists. When the investigation concludes, you may face simultaneous civil liability under the Stark Law, criminal exposure under the Anti-Kickback Statute, and Medicare/Medicaid exclusion. Quarterly advance documentation is not paperwork. It is the only thing standing between your practice and this outcome.",
+    cite:"42 U.S.C. §1395nn; 31 U.S.C. §3730(b) (qui tam)"});
 
-  if(F.has("RE_PERSONAL"))findings.push({sev:"high",title:"Personally Held Investment Real Estate Is Directly Exposed",
-    body:"Real estate in your individual name is directly attachable by any judgment creditor through levy and forced sale. Tenant claims, environmental liability, construction defect actions, and lease disputes flow directly to your personal balance sheet. This is one of the most straightforward structural corrections available.",
-    cite:"Fla. Stat. §56.061 (levy on real property); Fla. Stat. §55.10 (judgment lien on real property)"});
+  if(F.has("RE_PERSONAL"))findings.push({sev:"high",
+    title:"Investment Real Estate in Your Name Is a Direct Creditor Target",
+    body:"Real estate held personally is directly attachable by any judgment creditor through levy and forced sale under Fla. Stat. §56.061.",
+    consequence:"Every investment property in your personal name — rental properties, commercial real estate, land — is subject to an immediate judgment lien under Fla. Stat. §55.10 the moment a judgment is entered against you anywhere. The creditor does not need to prove anything additional. The property goes on the list of attachable assets automatically. Tenant liability at the property also flows directly to your personal balance sheet with no structural barrier. Transferring investment real estate into properly structured LLCs is one of the most straightforward structural corrections available.",
+    cite:"Fla. Stat. §56.061; Fla. Stat. §55.10"});
 
-  if(F.has("TBE_UNKNOWN")||F.has("TBE_MISSED"))findings.push({sev:"medium",title:"Tenancy by the Entireties Protection May Be Unclaimed",
-    body:"In Florida, married couples holding assets as Tenancy by the Entireties receive complete protection from one spouse's individual creditors. Most couples hold assets as 'joint tenants with right of survivorship' — which provides none of this protection. A home worth $3M, bank accounts, and investment accounts retitled as TBE are completely invisible to a single-spouse creditor. The fix is a retitling, not a structural overhaul.",
+  if(F.has("TBE_UNKNOWN")||F.has("TBE_MISSED"))findings.push({sev:"medium",
+    title:"Tenancy by the Entireties Protection Is Likely Unclaimed",
+    body:"Florida TBE titling provides complete protection from one spouse's individual creditors. Most married couples hold assets as 'joint tenants with right of survivorship' — which provides none of this protection.",
+    consequence:"If your joint bank accounts, investment accounts, and real estate are titled as JTWROS rather than TBE, they are fully reachable by a creditor with a judgment against either spouse individually. The same assets retitled as TBE become completely invisible to a single-spouse creditor — not reduced, not partially protected, completely invisible. A creditor must hold a joint judgment against both spouses to reach TBE assets. This protection is available to you right now through a retitling — not a new structure, not an attorney engagement, just a titling correction. The question is whether you've done it.",
     cite:"Fla. Stat. §689.115; Beal Bank v. Almand and Associates, 780 So.2d 45 (Fla. 2001)"});
 
-  if(F.has("INS_ONLY"))findings.push({sev:"medium",title:"Insurance-Only Strategy — The Gap Between Policy Limits and Reality",
-    body:"Insurance doesn't cover intentional acts, certain professional errors, punitive damages in many jurisdictions, and verdicts above your limits. In high-liability professions, nuclear verdicts exceeding $10M occur with increasing frequency. A strategy relying entirely on insurance means one verdict above your limits reaches your personal assets with no structural barrier. As Jon Alper frames it: the goal is to make collection so costly and uncertain that a creditor settles at pennies on the dollar — not to rely on insurance to absorb the full amount.",
-    cite:"Asset protection planning principle; settlement economics framework"});
+  if(F.has("INS_ONLY"))findings.push({sev:"medium",
+    title:"Insurance-Only Strategy Leaves Catastrophic Exposure Above Policy Limits",
+    body:"Insurance covers what it covers. It does not cover intentional acts, certain professional errors, punitive damages in many jurisdictions, or verdicts above policy limits.",
+    consequence:"In high-liability professions, nuclear verdicts — jury awards exceeding $5M or $10M — occur with increasing frequency. If your policy limit is $2M and the verdict is $8M, you personally owe $6M with no structural barrier in place. A creditor's attorney collecting on that $6M has access to every non-exempt asset you own. The purpose of structural planning is not to duplicate what insurance does — it is to exist as a second layer for the scenario where insurance is not enough. Without that layer, one verdict above your limits is a personal catastrophe.",
+    cite:"Asset protection planning principle"});
 
-  if(F.has("ADVISOR_SILO"))findings.push({sev:"medium",title:"Advisor Coordination Failure — Gassman's Most Preventable Error",
-    body:"The most common catastrophic planning failures result not from bad individual advice but from advisors working in silos. Your CPA's tax strategy may contradict your estate plan. Your insurance may conflict with your entity structure. Your financial advisor may be recommending strategies that undo your structural protections. Gassman identifies advisor silo failures as appearing in nearly every complex engagement he reviews.",
-    cite:"Gassman, Creditor Protection for Florida Physicians, Ch. 2 — Nine Catastrophic Errors in Protection Planning"});
+  if(F.has("ADVISOR_SILO"))findings.push({sev:"medium",
+    title:"Your Advisors Are Working in Silos — The Most Preventable Failure Pattern",
+    body:"The most common catastrophic planning failures result not from bad individual advice but from advisors who don't know what each other is doing.",
+    consequence:"Your CPA's tax strategy may be creating assets in your name that your estate plan doesn't account for. Your financial advisor may be recommending moves that undo structural protections your attorney put in place. Your insurance coverage may be duplicating or conflicting with your entity structure in ways nobody has reviewed. None of these advisors is wrong individually — they're simply not coordinated. A single coordinated review that puts all three advisors in the same conversation typically surfaces multiple gaps that have been sitting unaddressed for years.",
+    cite:"Gassman, Creditor Protection for Florida Physicians, Ch. 2 — Nine Catastrophic Errors"});
 
-  if(F.has("STALE_BENE"))findings.push({sev:"medium",title:"Beneficiary Designations Override Your Entire Estate Plan",
-    body:"A beneficiary designation on a retirement account or life insurance policy passes that asset directly to the named beneficiary — outside your will, outside your trust, outside your estate plan. A 1998 designation naming a prior spouse is still legally binding today. This is a 30-minute review that eliminates a significant coordination failure.",
-    cite:"Fla. Stat. §222.13 (life insurance beneficiary); Egelhoff v. Egelhoff, 532 U.S. 141 (2001) (ERISA preemption of state law)"});
+  if(F.has("STALE_BENE"))findings.push({sev:"medium",
+    title:"Beneficiary Designations Override Your Entire Estate Plan",
+    body:"A beneficiary designation passes that asset directly to the named person — outside your will, outside your trust, outside your estate plan entirely.",
+    consequence:"A retirement account with a 2003 designation naming a prior spouse still passes to that prior spouse regardless of your current will, your current trust, your current marriage, and every document your estate planning attorney drafted. This is not a hypothetical — it is a recurring fact pattern in estate administration. The fix takes 30 minutes. The cost of not fixing it can be the entire account balance passing to the wrong person, or passing to your estate and going through probate, or triggering a taxable event that proper planning would have avoided.",
+    cite:"Egelhoff v. Egelhoff, 532 U.S. 141 (2001) (ERISA preemption)"});
 
-  if(F.has("SUCCESSION_GAP")||F.has("INCAPACITY"))findings.push({sev:"medium",title:"Incapacity Planning Gap — Assets May Freeze When You Need Them Most",
-    body:"Without a Durable Power of Attorney and named successor trustee, your assets may require court-supervised guardianship before anyone can manage them. During that period — which takes months — creditors continue collecting, business decisions cannot be made, and assets freeze. This is the death-or-incapacity scenario stress-tested in sophisticated planning and it is entirely preventable.",
-    cite:"Fla. Stat. §709.2101 et seq. (Florida Power of Attorney Act); Fla. Stat. §736.0704 (successor trustee)"});
+  if(F.has("SUCCESSION_GAP")||F.has("INCAPACITY"))findings.push({sev:"medium",
+    title:"Incapacity Planning Gap — Your Assets Could Freeze at the Worst Moment",
+    body:"Without a Durable Power of Attorney and named successor trustee, your assets may require court-supervised guardianship before anyone can manage them on your behalf.",
+    consequence:"Guardianship proceedings in Florida take months. During that period, business decisions cannot be made, investment accounts may be frozen pending court approval for transactions, and your practice or business may lose value rapidly without authorized management. Creditors continue collecting throughout. This is the scenario that turns a temporary incapacity into a permanent financial disruption. A Durable Power of Attorney and successor trustee designation costs almost nothing to put in place and eliminates the entire risk.",
+    cite:"Fla. Stat. §709.2101 et seq.; Fla. Stat. §736.0704"});
 
   const displayFindings = findings.slice(0,6);
 
-  // Attack narrative
-  const profLabel = {physician:"physician practice",surgeon:"surgical practice",realestate_pro:"real estate portfolio",professional:"professional practice",business:"business",w2:"personal",multiple:"business"}[answers.profession]||"assets";
-  const entityLabel = {smllc:"single-member LLC",mmllc:"multi-member LLC",scorp:"S-corporation",pa:"Professional Association",ccorp:"C-corporation",multi:"multiple entities",unsure:"entity"}[answers.entity_type]||"structure";
+  // What's At Risk — asset-by-asset vulnerability list
+  const entityLabel = {smllc:"single-member LLC",mmllc:"multi-member LLC",scorp:"S-corporation",pa:"Professional Association",ccorp:"C-corporation",multi:"multiple entities",unsure:"your entity"}[answers.entity_type]||"your entity";
+  const atRisk = [];
 
-  let atk = `As opposing counsel, my first action is a public records pull — Florida Division of Corporations, the county property appraiser, and UCC filings. `;
-  if(F.has("NO_ENTITY")){atk+=`You have no entity structure. I file for a writ of execution against your personal assets immediately — there is nothing in my way. `;}
-  else if(F.has("SCORP_RISK")){atk+=`Your ${entityLabel} shares are directly attachable — I move for attachment of your ${profLabel} equity in the same motion as the judgment. No charging order required. `;}
-  else{atk+=`I identify your ${entityLabel} and file a charging order motion. `;
-    if(F.has("COMMINGLING")||F.has("VEIL_PIERCE")){atk+=`Your bank records show commingling — I add a veil-piercing count and subpoena five years of personal and business statements simultaneously. `;}}
-  if(F.has("RE_PERSONAL")){atk+=`Your investment real estate is in your name — I place a judgment lien under Fla. Stat. §55.10 and pursue forced sale. `;}
-  if(F.has("GUARANTEE")||F.has("GUARANTEE_CRIT")){atk+=`I pull your personal guarantees from the UCC filings and pursue each as an independent obligation — your entity structure is irrelevant to these. `;}
-  if(F.has("BADGES_FRAUD")||F.has("FT_CRITICAL")){atk+=`The recent transfers appear in the deed records. I file a fraudulent transfer action under §726.105 and move for reversal. `;}
-  if(F.has("PAYROLL_TAX")){atk+=`I refer your payroll tax situation to the IRS — they can reach your homestead. You cannot stop that. `;}
-  if(F.has("FOUNDING_CASE")){atk+=`Your payer concentration means one audit referral triggers the full cascade — practice collapse and personal exposure arrive simultaneously. `;}
-  if(F.has("FBAR_RISK")){atk+=`I see foreign accounts in discovery. Unreported FBAR accounts give me criminal exposure leverage that changes every settlement conversation. `;}
-  atk+=`This is not a hypothetical. This is the checklist a judgment creditor's attorney runs in the first 72 hours after a verdict.`;
+  if(F.has("NO_ENTITY")){
+    atRisk.push({label:"Everything you own personally",why:"With no formal entity, every business liability is your personal liability. A judgment creditor can reach your bank accounts, investments, home equity, and any other non-exempt assets without any additional legal step."});
+  }
+  if(F.has("SCORP_RISK")){
+    atRisk.push({label:"Your business or practice equity",why:"Your "+entityLabel+" shares are directly attachable by personal creditors — no veil piercing required, no charging order process. A creditor becomes a co-owner of your business with full shareholder rights."});
+  }
+  if(F.has("COMMINGLING")||F.has("VEIL_PIERCE")){
+    atRisk.push({label:"Personal assets despite having an entity",why:"Commingled finances give a creditor's attorney the evidence needed to pierce the veil and treat your entity as if it doesn't exist. Your personal accounts, home equity, and investments become reachable."});
+  }
+  if(F.has("FL_HOMESTEAD_DESTROYED")){
+    atRisk.push({label:"Your home",why:"Transferring a Florida home into an LLC eliminates the unlimited homestead exemption. A property that would have been completely untouchable is now a direct creditor asset subject to forced sale."});
+  }
+  if(F.has("RE_PERSONAL")){
+    atRisk.push({label:"Your investment real estate",why:"Every property in your personal name is subject to an immediate judgment lien the day a verdict is entered. Forced sale is the next step."});
+  }
+  if(F.has("GUARANTEE")||F.has("GUARANTEE_CRIT")){
+    atRisk.push({label:"Personal assets behind your guarantees",why:"Every personally guaranteed obligation bypasses your entity structure entirely. A creditor pursuing your guarantee goes directly to your personal assets — home equity, investments, accounts — with no structural barrier."});
+  }
+  if(F.has("BADGES_FRAUD")||F.has("FT_CRITICAL")){
+    atRisk.push({label:"Assets you already transferred",why:"Transfers made after litigation was filed or threatened can be reversed by court order. Assets you moved believing they were protected may be returned to your personal name and become immediately reachable."});
+  }
+  if(F.has("PAYROLL_TAX")){
+    atRisk.push({label:"Your home — including Florida homestead",why:"The IRS Trust Fund Recovery Penalty overrides Florida's constitutional homestead exemption through federal preemption. Delinquent payroll taxes reach every asset you own, including the home no other creditor could touch."});
+  }
+  if(F.has("FOUNDING_CASE")){
+    atRisk.push({label:"Your practice value and personal assets simultaneously",why:"Payer concentration above 60% means a single audit triggers a financial cascade across payer clawback, personal guarantees, and entity exposure at the same time. Each front accelerates the others."});
+  }
+  if(F.has("FBAR_RISK")){
+    atRisk.push({label:"Your negotiating position in any settlement",why:"Unreported foreign accounts give opposing counsel criminal leverage — turning a financial dispute into a proceeding where the threat of federal criminal referral changes every conversation."});
+  }
+  if(F.has("TAIL_GAP")){
+    atRisk.push({label:"Your personal assets for past medical procedures",why:"Without confirmed tail coverage, a malpractice claim filed after your policy lapses is completely uninsured. That judgment becomes a personal liability with no entity buffer and no insurance to absorb it."});
+  }
+  if(F.has("REV_TRUST_MYTH")){
+    atRisk.push({label:"Assets you believe are protected in your trust",why:"A revocable trust provides zero creditor protection. Every asset in it is legally yours in the eyes of a creditor — the trust wrapper changes nothing."});
+  }
+  if(F.has("TBE_UNKNOWN")||F.has("TBE_MISSED")){
+    atRisk.push({label:"Joint assets you hold with your spouse",why:"Assets titled as joint tenants rather than Tenancy by the Entireties are fully reachable by a creditor with a judgment against either spouse individually. The same assets correctly titled would be completely unreachable."});
+  }
 
-  // Routing
+  if(atRisk.length===0){
+    atRisk.push({label:"No immediate high-priority exposure identified",why:"Your current profile does not flag critical structural failures. A formal attorney review would confirm what is working and identify any gaps not surfaced by this diagnostic."});
+  }
+
+  // ─── REFERRAL ROUTING ─────────────────────────────────────────────────────
+  // TO CHANGE: edit the attorney objects below
+  // TO ADD A NEW ATTORNEY: add a new condition above the default
+  // TO ROUTE EVERYONE TO ONE ATTORNEY: set ref = ATTORNEYS.alper or ref = ATTORNEYS.gassman for all cases
+  // OFFSHORE TRIGGER: fires when OFFSHORE_URGENT or (OFFSHORE_OPEN + OFFSHORE_QUALIFIED + tier >= 3)
   const isPhys = F.has("PHYSICIAN");
-  const isOffshore = F.has("OFFSHORE_THRESHOLD") && tier>=3;
+  const isOffshoreUrgent = F.has("OFFSHORE_URGENT")||F.has("ACTIVE_JUDGMENT");
+  const isOffshoreQualified = (F.has("OFFSHORE_OPEN")&&F.has("OFFSHORE_QUALIFIED")&&tier>=3);
+  const isOffshore = isOffshoreUrgent||isOffshoreQualified;
   const isComplex = isPhys||F.has("ESTATE_TAX")||F.has("LIQUIDITY_EVENT");
 
+  // Build profile-specific referral reason
+  const activeFlags = displayFindings.map(f=>f.title);
+  const flagCount = activeFlags.length;
+
   let ref;
-  if(isPhys||isComplex){
+  if(isOffshoreUrgent){
+    // Offshore urgent — Alper primary regardless of other profile
+    const offshoreReason = F.has("ACTIVE_JUDGMENT")
+      ? `Your profile shows an entered judgment with significant liquid assets — the specific combination Jon Alper described as the scenario worth calling him about. Post-judgment offshore planning is the most technically complex and time-sensitive work in asset protection. Alper Law has handled this pattern specifically and repeatedly. The window for what is still possible narrows from the date of this call.`
+      : `Your profile combines a specific creditor threat with liquid assets above the threshold where offshore planning becomes cost-effective. This is the client profile Alper Law is built for — not a general high-net-worth individual looking for protection, but a specific situation where domestic options alone may be insufficient.`;
+    ref={name:"Jon Alper",firm:"Alper Law",
+      location:"Lake Mary, FL — virtual consultations available nationwide",
+      url:"https://www.alperlaw.com/schedule/",phone:"(407) 444-0404",email:"help@alperlaw.com",
+      reason:offshoreReason,
+      secondary: isPhys||isComplex ? {name:"Alan Gassman",firm:"Gassman, Denicolo & Ketron, P.A.",url:"https://gassmanlaw.com",note:"Given your physician/comprehensive planning profile, Alan Gassman should also be consulted for the practice and estate planning dimensions of your situation."} : null};
+  } else if(isPhys||isComplex){
+    const physReason = isPhys
+      ? `Your profile has ${flagCount} findings, ${displayFindings.filter(f=>f.sev==="critical").length} of which are critical. The specific combination — ${activeFlags.slice(0,2).join("; ")} — maps directly to the physician practice planning work Gassman's firm is built around. He has written the definitive Florida physician protection treatise, has represented hundreds of Florida physician practice owners, and has been named Bloomberg Tax's Contributor of the Year. This is not a generalist referral. The findings in your profile are the specific problems his practice handles.`
+      : `Your profile indicates a need for coordinated planning across estate, tax, business structure, and creditor protection. Gassman's firm handles all of these dimensions in a single integrated engagement — which is specifically what eliminates the advisor coordination failures that create most of the catastrophic planning outcomes we see.`;
     ref={name:"Alan Gassman",firm:"Gassman, Denicolo & Ketron, P.A.",location:"Clearwater, FL",
       url:"https://gassmanlaw.com",phone:"(727) 442-1200",email:"agassman@gassmanpa.com",
-      reason:isPhys?"Gassman is Florida's leading physician planning attorney — his practice covers practice structuring, malpractice gap analysis, payer risk, Stark Law compliance, buy-sell agreements, and personal asset protection. He has written the definitive Florida physician protection treatise and has represented hundreds of Florida physicians. He has been named Bloomberg Tax's Contributor of the Year.":"Your profile indicates a need for comprehensive planning across estate, tax, business structure, and creditor protection. Gassman's firm handles all of these in a coordinated engagement — eliminating the advisor coordination failure that creates most catastrophic planning outcomes.",
-      secondary:isOffshore?{name:"Jon Alper",firm:"Alper Law",url:"https://alperlaw.com",note:"Your net worth profile also warrants a conversation about offshore planning. Jon Alper at Alper Law is one of Florida's leading offshore trust attorneys — a pure asset protection practice operating since 1991."}:null};
+      reason:physReason,
+      secondary: isOffshoreQualified ? {name:"Jon Alper",firm:"Alper Law",url:"https://alperlaw.com",note:"Your net worth profile and openness to offshore structures also warrants a conversation with Jon Alper at Alper Law — Florida's leading offshore trust attorney."} : null};
   } else {
-    ref={name:"Jon Alper",firm:"Alper Law",location:"Lake Mary, FL — virtual consultations available",
+    const alperReason = `Your profile has ${flagCount} finding${flagCount!==1?"s":""} that require a pure asset protection specialist, not a generalist. ${activeFlags.length>0?`The primary issues — ${activeFlags.slice(0,2).join("; ")} — are exactly the structural problems Alper Law has been solving since 1991.`:"Alper Law handles pure asset protection work — no estate planning, no tax, no generalist services."} Jon and Gideon Alper personally handle every consultation. If your structure has gaps, they will identify them precisely. If it doesn't, they will tell you that too — they regularly turn away clients who don't need them.`;
+    ref={name:"Jon Alper",firm:"Alper Law",
+      location:"Lake Mary, FL — virtual consultations available nationwide",
       url:"https://www.alperlaw.com/schedule/",phone:"(407) 444-0404",email:"help@alperlaw.com",
-      reason:"Alper Law is a pure asset protection practice — no generalist services, no associate hand-offs. Jon and Gideon Alper personally handle every consultation. If your structure has gaps, they will identify them with precision. If it doesn't, they will tell you that too — they regularly turn away clients who don't need them. Pure, honest, specialist counsel since 1991.",
+      reason:alperReason,
       secondary:null};
   }
 
-  // Intake summary
+  // Human-readable flag labels for intake summary
+  const FLAG_LABELS = {
+    "NO_ENTITY":"No formal entity — personal liability exposure",
+    "SCORP_RISK":"S-corp / PA shares — no charging order protection",
+    "VEIL_PIERCE":"Veil-piercing risk — commingling detected",
+    "COMMINGLING":"Personal/business finances mixed",
+    "FORMALITY_GAP":"Corporate formalities not maintained",
+    "FL_HOMESTEAD_DESTROYED":"Home in LLC — homestead exemption destroyed",
+    "FL_NO_HOMESTEAD":"Homestead exemption not filed",
+    "REV_TRUST_MYTH":"Revocable trust — creditor protection misconception",
+    "ACTIVE_LIT":"Active litigation or demand letter",
+    "ACTIVE_JUDGMENT":"Judgment entered — planning window closing",
+    "WINDOW_CLOSED":"Active litigation — protective transfers foreclosed",
+    "BADGES_FRAUD":"Post-litigation transfers — fraudulent transfer risk",
+    "FT_CRITICAL":"Fraudulent transfer — badges of fraud present",
+    "FT_CONSTRUCTIVE":"Below-market transfers — constructive fraud risk",
+    "PAYROLL_TAX":"Payroll tax delinquency — IRS Trust Fund Risk",
+    "PAYROLL_CRITICAL":"Outstanding payroll taxes — critical personal liability",
+    "FOUNDING_CASE":"Payer concentration — Founding Case cascade risk",
+    "PAYER_CONC":"Payer concentration above safe threshold",
+    "GOVT_PAYER":"Medicare/Medicaid concentration — federal audit exposure",
+    "TAIL_GAP":"Claims-made policy — no confirmed tail coverage",
+    "CARRIER_RISK":"Malpractice carrier financial strength unconfirmed",
+    "STARK":"Stark Law compensation — undocumented quarterly",
+    "BILLING_GAP":"Billing review overdue — audit exposure",
+    "BILLING_PRIV_GAP":"Billing review not through counsel — no privilege",
+    "GUARANTEE":"Personal guarantees — direct liability exposure",
+    "GUARANTEE_CRIT":"Personal guarantees over $500K — critical exposure",
+    "RE_PERSONAL":"Investment real estate in personal name",
+    "RE_CONCENTRATED":"Multiple properties in single LLC",
+    "FBAR_RISK":"Foreign assets — FBAR reporting compliance unconfirmed",
+    "DAPT_SEASON":"Existing DAPT — still inside federal 10-year lookback",
+    "TBE_UNKNOWN":"TBE titling status unconfirmed — protection may be unclaimed",
+    "TBE_MISSED":"Joint assets not titled as TBE — protection unclaimed",
+    "NO_UMBRELLA":"No umbrella liability policy",
+    "UNDERINSURED":"Umbrella coverage below $1M",
+    "INS_ONLY":"Insurance-only strategy — no structural backup",
+    "ADVISOR_SILO":"Advisors not coordinated — silo failure risk",
+    "ADVISOR_GAP":"Missing advisor type(s) — coverage gap",
+    "SUCCESSION_GAP":"No successor trustee or DPOA in place",
+    "INCAPACITY":"Incapacity planning not established",
+    "STALE_BENE":"Beneficiary designations not recently reviewed",
+    "STALE_OA":"Operating agreement outdated or template",
+    "NO_OA":"No operating agreement",
+    "TIME_DECAY":"Entity maintenance lapsed — protection degrading",
+    "STALE_REVIEW":"No attorney structural review in 3+ years",
+    "NEVER_REVIEWED":"No attorney structural review — ever",
+    "OFFSHORE_URGENT":"Offshore planning warranted — urgent profile",
+    "OFFSHORE_QUALIFIED":"Offshore planning threshold met",
+    "OFFSHORE_OPEN":"Client open to offshore structures",
+    "SPECIFIC_CREDITOR":"Specific known creditor — planning window narrowing",
+    "LIQUIDITY_EVENT":"Business sale / liquidity event pending",
+    "DIVORCE_RISK":"Divorce or relationship concern flagged",
+    "LIQUID_SIGNIFICANT":"Liquid assets over $1M — offshore threshold met",
+    "DOMESTIC_GAPS":"Domestic planning not fully maximized",
+  };
+
+  const skipFlags = new Set(["FL","TX","CA","MARRIED","TBE_POSSIBLE","ERISA","FL_HOMESTEAD","FL_INS_EXEMPT","HIGH_RISK","PHYSICIAN","NUCLEAR_VERDICT","INSIDE","OUTSIDE","MULTI_ENTITY","SMLLC","MMLLC","PA","FOREIGN","BLENDED","CAPTIVE","PRIOR_LIT","UNVERIFIED","UNREVIEWED","GENERAL_EXPOSURE","OFFSHORE_POSSIBLE","LIQUID_MODERATE","DOMESTIC_GAPS"]);
+  const flagList = [...F].filter(f=>!skipFlags.has(f)&&FLAG_LABELS[f]).map(f=>FLAG_LABELS[f]);
+
   const profMap={physician:"Physician/Practice Owner",surgeon:"Surgeon",realestate_pro:"RE Developer/Investor",professional:"Attorney/Fin. Advisor",business:"Business Owner",w2:"W-2 Employee",multiple:"Multiple"};
   const nwMap={u500:"Under $500K","500_2m":"$500K–$2M","2_5m":"$2M–$5M","5_10m":"$5M–$10M",o10m:"Over $10M"};
-  const tMap={lawsuit:"Active lawsuit",threat:"Formal threat",peer:"Peer was sued",realestate:"RE purchase",wealth:"Wealth milestone",liquidity:"Business exit",divorce:"Divorce concerns",proactive:"Proactive",other:"Other"};
-  const flagList=[...F].filter(f=>!["FL","TX","CA","MARRIED","TBE_POSSIBLE","ERISA","FL_HOMESTEAD","FL_INS_EXEMPT"].includes(f));
-  const summary=`RISKEXPOSURES.COM — INTAKE SUMMARY\n${"─".repeat(52)}\nDate: ${new Date().toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})}\nRisk Tier: ${tLabel} (Score: ${score}/100)\nPlanning Window: ${uLabel}\n${F.has("ADVISOR_MODE")?"⚑ PROFESSIONAL REFERRAL — submitted by CPA/advisor\n":""}\nPROFILE\nProfession: ${profMap[answers.profession]||answers.profession||"Not specified"}\nNet Worth: ${nwMap[answers.net_worth]||"Not specified"}\nState: ${answers.state||"Not specified"}\nMarital Status: ${answers.marital||"Not specified"}\nTrigger: ${tMap[answers.trigger]||answers.trigger||"Not specified"}\n\nTOP FLAGS\n${flagList.slice(0,12).map(f=>`• ${f.replace(/_/g," ")}`).join("\n")}\n\nKEY FINDINGS (${displayFindings.length})\n${displayFindings.map((f,i)=>`${i+1}. [${f.sev.toUpperCase()}] ${f.title}`).join("\n")}\n\n${answers.notes?`ADDITIONAL NOTES FROM CLIENT\n"${answers.notes}"\n`:""}\nMATCHED SPECIALIST: ${ref.name} — ${ref.firm}\n${ref.phone} | ${ref.email}\n${ref.url}\n${"─".repeat(52)}\nFor attorney review only. Not for client distribution.`;
+  const tMap={lawsuit:"Active lawsuit filed",threat:"Formal threat/demand letter",peer:"Peer was sued",realestate:"RE purchase/ownership",wealth:"Wealth milestone crossed",liquidity:"Business sale/exit",divorce:"Divorce/relationship concerns",proactive:"Proactive review",other:"Other"};
 
-  return {score,tier,tColor,tLabel,urgency,uLabel,uColor,findings:displayFindings,attack:atk,ref,summary,flags:[...F]};
+  const flagLines = flagList.map(f=>"• "+f).join("\n")||"• None beyond baseline";
+  const findingLines = displayFindings.map((f,i)=>(i+1)+". ["+f.sev.toUpperCase()+"] "+f.title).join("\n");
+  const notesLine = answers.notes?"ADDITIONAL NOTES FROM CLIENT\n\""+answers.notes+"\"\n\n":"";
+  const secondaryLine = ref.secondary?"\n\nSECONDARY: "+ref.secondary.name+" — "+ref.secondary.firm+"\n"+ref.secondary.url:"";
+  const divider = "─".repeat(54);
+  const judgmentLine = F.has("ACTIVE_JUDGMENT")?"⚠ JUDGMENT ENTERED — POST-JUDGMENT PROFILE\n":"";
+  const offshoreLine = (F.has("OFFSHORE_URGENT")||F.has("OFFSHORE_QUALIFIED"))?"★ OFFSHORE PLANNING INDICATORS PRESENT\n":"";
+  const advisorLine = F.has("ADVISOR_MODE")?"⚑ PROFESSIONAL REFERRAL — submitted by CPA/advisor\n":"";
+  const dateStr = new Date().toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"});
+  const profStr = profMap[answers.profession]||answers.profession||"Not specified";
+  const nwStr = nwMap[answers.net_worth]||"Not specified";
+  const stateStr = answers.state?.toUpperCase()||"Not specified";
+  const maritalStr = answers.marital||"Not specified";
+  const triggerStr = tMap[answers.trigger]||answers.trigger||"Not specified";
+  const summary = [
+    "RISKEXPOSURES.COM — INTAKE SUMMARY",
+    divider,
+    "Date: "+dateStr,
+    "Risk Tier: "+tLabel+" (Score: "+score+"/100)",
+    "Planning Window: "+uLabel,
+    advisorLine,
+    "PROFILE",
+    "Profession:    "+profStr,
+    "Net Worth:     "+nwStr,
+    "State:         "+stateStr,
+    "Marital:       "+maritalStr,
+    "Trigger:       "+triggerStr,
+    judgmentLine+offshoreLine,
+    "FLAGS FIRED ("+flagList.length+")",
+    flagLines,
+    "",
+    "KEY FINDINGS ("+displayFindings.length+")",
+    findingLines,
+    "",
+    notesLine+"MATCHED SPECIALIST: "+ref.name+" — "+ref.firm,
+    ref.phone+" | "+ref.email,
+    ref.url+secondaryLine,
+    divider,
+    "For attorney review only. Not for client distribution."
+  ].join("\n");
+
+
+  return {score,tier,tColor,tLabel,tDesc,urgency,uLabel,uColor,uDesc,findings:displayFindings,atRisk,ref,summary,flags:[...F]};
 }
 
 // ─── MAIN COMPONENT ────────────────────────────────────────────────────────────
@@ -710,7 +977,7 @@ export default function RiskExposures() {
             Most people with significant wealth believe their structure protects them. Most are wrong about at least one critical thing — and the ones who are most confidently wrong are the most dangerous cases.
           </p>
           <p style={{fontSize:"0.95rem",lineHeight:1.75,color:C.textDim,marginBottom:"2.5rem"}}>
-            This diagnostic surfaces the specific gaps in your structure — the ones a creditor's attorney finds first. Built on the same analytical framework used by Florida's leading asset protection attorneys.
+            This diagnostic exposes the specific gaps in your structure — the vulnerabilities a creditor's attorney identifies before you even know there's a problem. Built on the same analytical framework used by Florida's leading asset protection attorneys.
           </p>
           <div style={{display:"flex",gap:"2.5rem",marginBottom:"2.5rem",flexWrap:"wrap"}}>
             {[["5–8 min","to complete"],["Free","no account needed"],["Confidential","your data stays yours"]].map(([v,l])=>(
@@ -769,7 +1036,7 @@ export default function RiskExposures() {
 
   // ── RESULTS ────────────────────────────────────────────────────────────────
   if(phase==="results"&&results){
-    const {score,tColor,tLabel,urgency,uLabel,uColor,findings,attack,ref,summary}=results;
+    const {score,tColor,tLabel,tDesc,urgency,uLabel,uColor,uDesc,findings,atRisk,ref,summary}=results;
     const circ=2*Math.PI*52;
     const offset=circ-(score/100)*circ;
 
@@ -810,17 +1077,14 @@ export default function RiskExposures() {
             </div>
             <div style={{flex:1,minWidth:"200px"}}>
               <div style={{fontSize:"0.66rem",letterSpacing:"0.16em",textTransform:"uppercase",color:C.textMuted,marginBottom:"0.4rem"}}>Risk Tier</div>
-              <div className="serif" style={{fontSize:"1.7rem",fontWeight:600,color:tColor,marginBottom:"0.75rem"}}>{tLabel}</div>
+              <div className="serif" style={{fontSize:"1.7rem",fontWeight:600,color:tColor,marginBottom:"0.5rem"}}>{tLabel}</div>
+              <p style={{fontSize:"0.845rem",color:C.textMid,lineHeight:1.65,marginBottom:"0.75rem"}}>{tDesc}</p>
               {/* Urgency */}
               <div style={{display:"flex",alignItems:"flex-start",gap:"0.75rem",padding:"0.875rem 1rem",background:uColor===C.green?C.greenBg:uColor===C.yellow?C.yellowBg:C.redBg,border:`1px solid ${uColor}40`,borderLeft:`3px solid ${uColor}`,borderRadius:"0 3px 3px 0"}}>
                 <div style={{width:"8px",height:"8px",borderRadius:"50%",background:uColor,flexShrink:0,marginTop:"3px"}}/>
                 <div>
                   <span style={{fontSize:"0.67rem",letterSpacing:"0.14em",textTransform:"uppercase",color:uColor,fontWeight:500}}>Planning Window: {uLabel}</span>
-                  <div style={{fontSize:"0.8rem",color:C.textMid,marginTop:"0.25rem",lineHeight:1.55}}>
-                    {urgency==="closing"&&"Active litigation or a critical compliance failure is present. Most protective transfers are now presumptively fraudulent. Every day without counsel is a day opposing counsel is preparing their case."}
-                    {urgency==="narrowing"&&"A triggering event or pending transaction is in your profile. The window for protective planning is still open but narrowing. Most of the gaps identified above can be addressed structurally before any creditor event occurs — after one, your options narrow significantly."}
-                    {urgency==="open"&&"No active triggering events identified. This is the optimal moment for structural review — planning done proactively costs a fraction of planning done reactively, and protection put in place now seasons over time."}
-                  </div>
+                  <div style={{fontSize:"0.8rem",color:C.textMid,marginTop:"0.25rem",lineHeight:1.55}}>{uDesc}</div>
                 </div>
               </div>
             </div>
@@ -834,13 +1098,19 @@ export default function RiskExposures() {
             </p>
           </div>
 
-          {/* Attack surface */}
+          {/* What's At Risk */}
           <div className="fade-up-2" style={{marginBottom:"2.5rem"}}>
-            <h2 className="serif" style={{fontSize:"1.25rem",fontWeight:500,color:C.text,marginBottom:"1rem",paddingBottom:"0.75rem",borderBottom:`1px solid ${C.border}`}}>Your Specific Attack Surface</h2>
-            <div style={{background:C.redBg,border:`1px solid ${C.red}20`,borderLeft:`3px solid ${C.red}`,borderRadius:"0 3px 3px 0",padding:"1.25rem 1.5rem"}}>
-              <p style={{fontSize:"0.66rem",letterSpacing:"0.14em",textTransform:"uppercase",color:C.red,marginBottom:"0.6rem"}}>From Opposing Counsel's Perspective</p>
-              <p style={{fontSize:"0.875rem",color:C.textMid,lineHeight:1.72}}>{attack}</p>
-            </div>
+            <h2 className="serif" style={{fontSize:"1.25rem",fontWeight:500,color:C.text,marginBottom:"0.5rem",paddingBottom:"0.75rem",borderBottom:`1px solid ${C.border}`}}>What's At Risk</h2>
+            <p style={{fontSize:"0.82rem",color:C.textDim,marginBottom:"1.25rem"}}>Based on your answers, here is what is structurally vulnerable in your current situation — and why.</p>
+            {atRisk.map((item,i)=>(
+              <div key={i} style={{display:"flex",gap:"1rem",padding:"1rem 0",borderBottom:`1px solid ${C.border}`}}>
+                <div style={{width:"8px",height:"8px",borderRadius:"50%",background:C.red,flexShrink:0,marginTop:"5px"}}/>
+                <div>
+                  <div style={{fontSize:"0.9rem",fontWeight:500,color:C.text,marginBottom:"0.3rem"}}>{item.label}</div>
+                  <div style={{fontSize:"0.845rem",color:C.textMid,lineHeight:1.65}}>{item.why}</div>
+                </div>
+              </div>
+            ))}
           </div>
 
           {/* Findings */}
@@ -856,7 +1126,13 @@ export default function RiskExposures() {
                     {f.trap&&<span className="tag" style={{background:C.accentBg,color:C.accent}}>{f.trapLabel||"Misconception Identified"}</span>}
                   </div>
                   <h3 style={{fontSize:"0.925rem",fontWeight:500,color:C.text,marginBottom:"0.5rem"}}>{f.title}</h3>
-                  <p style={{fontSize:"0.845rem",color:C.textMid,lineHeight:1.7,marginBottom:"0.5rem"}}>{f.body}</p>
+                  <p style={{fontSize:"0.845rem",color:C.textMid,lineHeight:1.7,marginBottom:"0.6rem"}}>{f.body}</p>
+                  {f.consequence&&(
+                    <div style={{borderTop:`1px solid ${sc(f.sev)}20`,paddingTop:"0.6rem",marginTop:"0.2rem",marginBottom:"0.5rem"}}>
+                      <p style={{fontSize:"0.67rem",letterSpacing:"0.12em",textTransform:"uppercase",color:sc(f.sev),marginBottom:"0.3rem"}}>What This Means For You</p>
+                      <p style={{fontSize:"0.835rem",color:C.textMid,lineHeight:1.7}}>{f.consequence}</p>
+                    </div>
+                  )}
                   <p style={{fontSize:"0.72rem",color:C.textMuted,fontStyle:"italic"}}>{f.cite}</p>
                 </div>
               ))}
