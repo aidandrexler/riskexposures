@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { Helmet } from 'react-helmet-async'
 import { C } from '../tokens.js'
 
 const ARTICLES = [
@@ -42,6 +43,14 @@ const ARTICLES = [
 export default function BlogPage() {
   return (
     <div style={{ background: C.bg, minHeight: '100vh' }}>
+      <Helmet>
+        <title>Asset Protection Resources & Research — Risk Exposures</title>
+        <meta name="description" content="Plain-language analysis of the structural mistakes that expose wealth to creditors — and how to fix them. Covers LLC protection failures, Florida homestead traps, physician practice risk, personal guarantees, and more." />
+        <link rel="canonical" href="https://riskexposures.com/blog" />
+        <meta property="og:title" content="Asset Protection Resources & Research — Risk Exposures" />
+        <meta property="og:description" content="The structural mistakes that expose wealth to creditors. Covers LLC failures, homestead traps, physician practice risk, personal guarantees, and revocable trust misconceptions." />
+        <meta property="og:url" content="https://riskexposures.com/blog" />
+      </Helmet>
       <div style={{ maxWidth: '900px', margin: '0 auto', padding: 'clamp(3rem, 6vw, 5rem) 2rem' }}>
 
         <div className="fade-up" style={{ marginBottom: '3rem', paddingBottom: '2rem', borderBottom: `1px solid ${C.border}` }}>

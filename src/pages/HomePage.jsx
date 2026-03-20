@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { Helmet } from 'react-helmet-async'
 import { C } from '../tokens.js'
 
 const ARTICLES_PREVIEW = [
@@ -25,6 +26,14 @@ const ARTICLES_PREVIEW = [
 export default function HomePage() {
   return (
     <div style={{ background: C.bg }}>
+      <Helmet>
+        <title>Risk Exposures — Free Asset Protection Diagnostic for Business Owners & Professionals</title>
+        <meta name="description" content="Find out exactly how exposed your wealth is. A free structural risk diagnostic for high-net-worth individuals, business owners, physicians, and professionals. Personalized risk score with legal citations in 5 minutes." />
+        <link rel="canonical" href="https://riskexposures.com/" />
+        <meta property="og:title" content="How Exposed Are You, Really? — Free Risk Diagnostic" />
+        <meta property="og:description" content="A free structural risk diagnostic for business owners, physicians, and high-net-worth professionals. Find out exactly what a creditor's attorney could take — and why." />
+        <meta property="og:url" content="https://riskexposures.com/" />
+      </Helmet>
 
       {/* HERO */}
       <section style={{

@@ -1,4 +1,5 @@
 import { useParams, Link, Navigate } from 'react-router-dom'
+import { Helmet } from 'react-helmet-async'
 import { C } from '../tokens.js'
 
 const ARTICLES = {
@@ -222,6 +223,31 @@ export default function ArticlePage() {
 
   return (
     <div style={{ background: C.bg, minHeight: '100vh' }}>
+      <Helmet>
+        <title>{article.title} — Risk Exposures</title>
+        <meta name="description" content={article.description} />
+        <link rel="canonical" href={`https://riskexposures.com/blog/${slug}`} />
+        <meta property="og:title" content={article.title} />
+        <meta property="og:description" content={article.description} />
+        <meta property="og:url" content={`https://riskexposures.com/blog/${slug}`} />
+        <meta property="og:type" content="article" />
+        <script type="application/ld+json">{JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "Article",
+          "headline": article.title,
+          "description": article.description,
+          "datePublished": article.date,
+          "publisher": {
+            "@type": "Organization",
+            "name": "Risk Exposures",
+            "url": "https://riskexposures.com"
+          },
+          "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": `https://riskexposures.com/blog/${slug}`
+          }
+        })}</script>
+      </Helmet>
       <div style={{ maxWidth: '720px', margin: '0 auto', padding: 'clamp(3rem, 6vw, 5rem) 2rem' }}>
 
         {/* Breadcrumb */}
