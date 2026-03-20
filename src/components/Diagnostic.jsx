@@ -112,11 +112,11 @@ const QS = [
    question:"Approximate net worth — total assets minus total debts?",
    subtext:"This calibrates the stakes. The same structural gap at $800K and at $8M are completely different planning problems.",
    options:[
-     {label:"Under $500K",value:"u500",nwM:0.5},
+     {label:"Under $500K",value:"u500",nwM:0.6},
      {label:"$500K – $2M",value:"500_2m",nwM:1.0},
-     {label:"$2M – $5M",value:"2_5m",nwM:1.4},
-     {label:"$5M – $10M",value:"5_10m",nwM:1.8,flags:["OFFSHORE_THRESHOLD"]},
-     {label:"Over $10M",value:"o10m",nwM:2.2,flags:["OFFSHORE_THRESHOLD","ESTATE_TAX"]},
+     {label:"$2M – $5M",value:"2_5m",nwM:1.2},
+     {label:"$5M – $10M",value:"5_10m",nwM:1.4,flags:["OFFSHORE_THRESHOLD"]},
+     {label:"Over $10M",value:"o10m",nwM:1.6,flags:["OFFSHORE_THRESHOLD","ESTATE_TAX"]},
    ]},
   {id:"state",section:"Who You Are",
    question:"What state do you primarily reside in?",
@@ -175,7 +175,7 @@ const QS = [
      {label:"Protecting personal assets from a business lawsuit (inside liability)",value:"inside",flags:["INSIDE"]},
      {label:"Protecting business/investment assets from a personal judgment (outside liability)",value:"outside",flags:["OUTSIDE"]},
      {label:"Both directions — I have exposure either way",value:"both",flags:["INSIDE","OUTSIDE"]},
-     {label:"I'm not sure I understand the difference",value:"unsure",flags:["INSIDE","OUTSIDE"],gapPts:5},
+     {label:"I'm not sure I understand the difference",value:"unsure",flags:["INSIDE","OUTSIDE"]},
    ]},
   {id:"operating_agreement",section:"Your Structure",
    question:"Do you have a current operating agreement reviewed by an attorney within the last two years?",
@@ -183,10 +183,10 @@ const QS = [
    showIf:a=>a.entity_type==="smllc"||a.entity_type==="mmllc",
    options:[
      {label:"Yes — reviewed and updated within 2 years",value:"current",flags:[]},
-     {label:"Yes — but over 2 years old",value:"stale",flags:["STALE_OA","TIME_DECAY"],gapPts:5},
-     {label:"I have a downloaded template",value:"template",flags:["STALE_OA","TIME_DECAY"],gapPts:9},
-     {label:"No operating agreement",value:"none",flags:["NO_OA"],gapPts:11},
-     {label:"Not sure",value:"unsure",flags:["STALE_OA"],gapPts:6},
+     {label:"Yes — but over 2 years old",value:"stale",flags:["STALE_OA","TIME_DECAY"],gapPts:4},
+     {label:"I have a downloaded template",value:"template",flags:["STALE_OA","TIME_DECAY"],gapPts:7},
+     {label:"No operating agreement",value:"none",flags:["NO_OA"],gapPts:8},
+     {label:"Not sure",value:"unsure",flags:["STALE_OA"],gapPts:5},
    ]},
   {id:"formalities",section:"Your Structure",
    question:"Does your entity hold annual meetings, document major decisions in writing, and maintain records separate from your personal affairs?",
@@ -194,9 +194,10 @@ const QS = [
    showIf:a=>a.has_entity==="yes",
    options:[
      {label:"Yes — fully maintained with documented minutes and resolutions",value:"yes",flags:[]},
-     {label:"Mostly — some documentation but inconsistently maintained",value:"mostly",flags:["FORMALITY_GAP"],gapPts:6},
-     {label:"No — no formal record-keeping",value:"no",flags:["FORMALITY_GAP","VEIL_PIERCE"],gapPts:13},
-     {label:"I didn't know this was required",value:"unknown",flags:["FORMALITY_GAP","VEIL_PIERCE"],gapPts:13},
+     {label:"Mostly — some documentation but inconsistently maintained",value:"mostly",flags:["FORMALITY_GAP"],gapPts:4},
+     {label:"No — no formal record-keeping",value:"no",flags:["FORMALITY_GAP","VEIL_PIERCE"],gapPts:10},
+     {label:"I didn't know this was required",value:"unknown",flags:["FORMALITY_GAP","VEIL_PIERCE"],gapPts:8},
+     {label:"My entity is newly formed — less than 1 year old",value:"new",flags:[]},
    ]},
   {id:"commingling",section:"Your Structure",
    question:"Do your personal and business finances ever mix?",
@@ -204,9 +205,9 @@ const QS = [
    showIf:a=>a.has_entity==="yes",
    options:[
      {label:"Never — completely separate with no exceptions",value:"never",flags:[]},
-     {label:"Occasionally — minor items here and there",value:"occasionally",flags:["COMMINGLING"],gapPts:8},
-     {label:"Regularly — not strictly separated",value:"regularly",flags:["COMMINGLING","VEIL_PIERCE"],gapPts:16},
-     {label:"Not sure",value:"unsure",flags:["COMMINGLING"],gapPts:7},
+     {label:"Occasionally — minor items here and there",value:"occasionally",flags:["COMMINGLING"],gapPts:6},
+     {label:"Regularly — not strictly separated",value:"regularly",flags:["COMMINGLING","VEIL_PIERCE"],gapPts:12},
+     {label:"Not sure",value:"unsure",flags:["COMMINGLING"],gapPts:5},
    ]},
   {id:"salary_dist",section:"Your Structure",
    question:"If you own your business entity, how do you primarily pay yourself?",
@@ -214,9 +215,10 @@ const QS = [
    showIf:a=>a.has_entity==="yes",
    options:[
      {label:"Authorized salary — regular documented payroll",value:"salary",flags:[]},
-     {label:"Distributions or draws — no formal salary",value:"dist",flags:["SALARY_GAP"],gapPts:8},
+     {label:"Distributions or draws — no formal salary",value:"dist",flags:["SALARY_GAP"],gapPts:6},
      {label:"Mix of both",value:"mixed",flags:[]},
-     {label:"Not sure how it's classified",value:"unsure",flags:["SALARY_GAP"],gapPts:6},
+     {label:"Not sure how it's classified",value:"unsure",flags:["SALARY_GAP"],gapPts:4},
+     {label:"I don't own the entity / I receive a W-2 only",value:"w2_only",flags:[]},
    ]},
   {id:"owns_re",section:"Your Assets",
    question:"Do you own real estate beyond your primary residence?",
@@ -283,17 +285,17 @@ const QS = [
    options:[
      {label:"Yes — $5M or more",value:"high",flags:[]},
      {label:"Yes — $1M to $5M",value:"mid",flags:[]},
-     {label:"Yes — under $1M",value:"low",flags:["UNDERINSURED"],gapPts:7},
-     {label:"No umbrella policy",value:"none",flags:["NO_UMBRELLA"],gapPts:12},
-     {label:"Not sure what I have",value:"unsure",flags:["NO_UMBRELLA"],gapPts:9},
+     {label:"Yes — under $1M",value:"low",flags:["UNDERINSURED"],gapPts:5},
+     {label:"No umbrella policy",value:"none",flags:["NO_UMBRELLA"],gapPts:8},
+     {label:"Not sure what I have",value:"unsure",flags:["NO_UMBRELLA"],gapPts:6},
    ]},
   {id:"ins_strategy",section:"Your Coverage",
    question:"What role does insurance play in your protection strategy?",
    options:[
-     {label:"Insurance is my primary strategy — my main plan is to be well insured",value:"primary",flags:["INS_ONLY"],gapPts:8},
+     {label:"Insurance is my primary strategy — my main plan is to be well insured",value:"primary",flags:["INS_ONLY"],gapPts:6},
      {label:"Insurance plus structural protections",value:"mixed",flags:[]},
      {label:"Structural planning is primary — insurance fills gaps",value:"structural",flags:[]},
-     {label:"I haven't thought about it in those terms",value:"unsure",flags:["INS_ONLY"],gapPts:6},
+     {label:"I haven't thought about it in those terms",value:"unsure",flags:["INS_ONLY"],gapPts:4},
    ]},
   // PHYSICIAN BRANCH
   {id:"mal_type",section:"Practice Risk",
@@ -303,9 +305,9 @@ const QS = [
    options:[
      {label:"Occurrence-based — covers any incident during the policy period regardless of when filed",value:"occurrence",flags:[]},
      {label:"Claims-made — with tail coverage confirmed in writing",value:"claims_tail",flags:[]},
-     {label:"Claims-made — tail coverage not yet arranged",value:"claims_no_tail",flags:["TAIL_GAP"],gapPts:14},
-     {label:"Not sure which type",value:"unsure",flags:["TAIL_GAP"],gapPts:10},
-     {label:"No malpractice insurance",value:"none",flags:["NO_MAL"],gapPts:22},
+     {label:"Claims-made — tail coverage not yet arranged",value:"claims_no_tail",flags:["TAIL_GAP"],gapPts:10},
+     {label:"Not sure which type",value:"unsure",flags:["TAIL_GAP"],gapPts:7},
+     {label:"No malpractice insurance",value:"none",flags:["NO_MAL"],gapPts:20},
    ]},
   {id:"carrier_rating",section:"Practice Risk",
    question:"Do you know your malpractice carrier's AM Best financial strength rating?",
@@ -313,8 +315,8 @@ const QS = [
    showIf:a=>a.profession==="physician"||a.profession==="surgeon",
    options:[
      {label:"Yes — A or A+ rated",value:"strong",flags:[]},
-     {label:"Yes — B-rated or lower",value:"weak",flags:["CARRIER_RISK"],gapPts:14},
-     {label:"I don't know my carrier's rating",value:"unknown",flags:["CARRIER_RISK"],gapPts:10},
+     {label:"Yes — B-rated or lower",value:"weak",flags:["CARRIER_RISK"],gapPts:10},
+     {label:"I don't know my carrier's rating",value:"unknown",flags:["CARRIER_RISK"],gapPts:8},
      {label:"I use a captive or risk retention group",value:"captive",flags:["CAPTIVE"]},
    ]},
   {id:"payer_conc",section:"Practice Risk",
@@ -323,10 +325,10 @@ const QS = [
    showIf:a=>a.profession==="physician"||a.profession==="surgeon",
    options:[
      {label:"Under 30% — well diversified",value:"low",flags:[]},
-     {label:"30% to 60%",value:"mid",flags:["PAYER_CONC"],gapPts:8},
-     {label:"Over 60%",value:"high",flags:["PAYER_CONC","FOUNDING_CASE"],gapPts:16},
-     {label:"Medicare or Medicaid is my largest payer (over 30%)",value:"govt",flags:["PAYER_CONC","GOVT_PAYER"],gapPts:12},
-     {label:"Not sure",value:"unsure",flags:["PAYER_CONC"],gapPts:8},
+     {label:"30% to 60%",value:"mid",flags:["PAYER_CONC"],gapPts:6},
+     {label:"Over 60%",value:"high",flags:["PAYER_CONC","FOUNDING_CASE"],gapPts:14},
+     {label:"Medicare or Medicaid is my largest payer (over 30%)",value:"govt",flags:["PAYER_CONC","GOVT_PAYER"],gapPts:10},
+     {label:"Not sure",value:"unsure",flags:["PAYER_CONC"],gapPts:6},
    ]},
   {id:"billing_review",section:"Practice Risk",
    question:"When did you last have an independent billing and coding review — conducted through an attorney to preserve privilege?",
@@ -334,9 +336,9 @@ const QS = [
    showIf:a=>a.profession==="physician"||a.profession==="surgeon",
    options:[
      {label:"Within 12 months — through an attorney",value:"recent_priv",flags:[]},
-     {label:"Within 12 months — not through an attorney",value:"recent_unpriv",flags:["BILLING_PRIV_GAP"],gapPts:6},
-     {label:"1 to 3 years ago",value:"old",flags:["BILLING_GAP"],gapPts:8},
-     {label:"Never or more than 3 years ago",value:"never",flags:["BILLING_GAP"],gapPts:12},
+     {label:"Within 12 months — not through an attorney",value:"recent_unpriv",flags:["BILLING_PRIV_GAP"],gapPts:5},
+     {label:"1 to 3 years ago",value:"old",flags:["BILLING_GAP"],gapPts:6},
+     {label:"Never or more than 3 years ago",value:"never",flags:["BILLING_GAP"],gapPts:8},
    ]},
   {id:"payroll_tax",section:"Practice Risk",
    question:"Are all payroll tax deposits for your practice fully current — no outstanding 941 obligations?",
@@ -344,7 +346,7 @@ const QS = [
    showIf:a=>a.profession==="physician"||a.profession==="surgeon",
    options:[
      {label:"Yes — fully current, no issues",value:"current",flags:[]},
-     {label:"Not fully sure — may be outstanding amounts",value:"unsure",flags:["PAYROLL_TAX"],gapPts:18},
+     {label:"Not fully sure — may be outstanding amounts",value:"unsure",flags:["PAYROLL_TAX"],gapPts:15},
      {label:"We have outstanding payroll tax obligations",value:"delinquent",flags:["PAYROLL_TAX","PAYROLL_CRITICAL"],gapPts:25},
    ]},
   {id:"buy_sell",section:"Practice Risk",
@@ -353,9 +355,10 @@ const QS = [
    showIf:a=>(a.profession==="physician"||a.profession==="surgeon")&&(a.entity_type==="mmllc"||a.entity_type==="pa"||a.entity_type==="multi"),
    options:[
      {label:"Yes — funded and reviewed within 3 years",value:"current",flags:[]},
-     {label:"Yes — but not reviewed in over 3 years",value:"stale",flags:["STALE_BS"],gapPts:8},
-     {label:"No buy-sell agreement",value:"none",flags:["NO_BS"],gapPts:10},
-     {label:"Not sure",value:"unsure",flags:["STALE_BS"],gapPts:7},
+     {label:"Yes — but not reviewed in over 3 years",value:"stale",flags:["STALE_BS"],gapPts:6},
+     {label:"No buy-sell agreement",value:"none",flags:["NO_BS"],gapPts:8},
+     {label:"I am the sole owner — no co-owners",value:"sole",flags:[]},
+     {label:"Not sure",value:"unsure",flags:["STALE_BS"],gapPts:5},
    ]},
   {id:"stark",section:"Practice Risk",
    question:"If your practice involves physician referrals to in-house services, are compensation arrangements documented quarterly in advance?",
@@ -457,7 +460,7 @@ const QS = [
    subtext:"Foreign assets create planning opportunities and significant compliance obligations. FBAR non-compliance gives opposing counsel powerful enforcement leverage.",
    options:[
      {label:"Yes — and I am current on all FBAR and foreign reporting",value:"yes_ok",flags:["FOREIGN"]},
-     {label:"Yes — but I'm not sure if reporting is fully current",value:"yes_unsure",flags:["FOREIGN","FBAR_RISK"],gapPts:14},
+     {label:"Yes — but I'm not sure if reporting is fully current",value:"yes_unsure",flags:["FOREIGN","FBAR_RISK"],gapPts:8},
      {label:"No foreign assets or accounts",value:"no",flags:[]},
    ]},
   // SUCCESSION
@@ -466,26 +469,27 @@ const QS = [
    subtext:"Assets frozen during incapacity while creditors continue collecting is a recurring catastrophic failure pattern.",
    options:[
      {label:"Yes — fully documented with named successor trustee and DPOA",value:"yes",flags:[]},
-     {label:"Partially — some documents but not fully coordinated",value:"partial",flags:["SUCCESSION_GAP"],gapPts:6},
-     {label:"No — nothing formal in place",value:"no",flags:["SUCCESSION_GAP","INCAPACITY"],gapPts:12},
-     {label:"I didn't know this was a planning gap",value:"unknown",flags:["SUCCESSION_GAP","INCAPACITY"],gapPts:12},
+     {label:"Partially — some documents but not fully coordinated",value:"partial",flags:["SUCCESSION_GAP"],gapPts:4},
+     {label:"No — nothing formal in place",value:"no",flags:["SUCCESSION_GAP","INCAPACITY"],gapPts:8},
+     {label:"I didn't know this was a planning gap",value:"unknown",flags:["SUCCESSION_GAP","INCAPACITY"],gapPts:8},
    ]},
   {id:"beneficiaries",section:"Continuity Planning",
    question:"Have you reviewed beneficiary designations on retirement accounts and life insurance within the last 3 years?",
    subtext:"Beneficiary designations override your will, your trust, and your estate plan entirely. A 1998 designation naming a prior spouse is still legally binding today.",
    options:[
      {label:"Yes — reviewed and updated within 3 years",value:"current",flags:[]},
-     {label:"Set originally but never reviewed since",value:"stale",flags:["STALE_BENE"],gapPts:8},
-     {label:"Never reviewed or not sure",value:"never",flags:["STALE_BENE"],gapPts:10},
+     {label:"Set originally but never reviewed since",value:"stale",flags:["STALE_BENE"],gapPts:4},
+     {label:"Never reviewed or not sure",value:"never",flags:["STALE_BENE"],gapPts:5},
+     {label:"I don't have retirement accounts or life insurance",value:"na",flags:[]},
    ]},
   {id:"advisor_coord",section:"Continuity Planning",
    question:"Do your CPA, financial advisor, and estate planning attorney actively coordinate with each other on your overall structure?",
    subtext:"The most preventable catastrophic planning errors result from advisors working in silos — your tax strategy contradicting your estate plan, your insurance conflicting with your entity structure.",
    options:[
      {label:"Yes — they communicate regularly, I have coordinated reviews",value:"yes",flags:[]},
-     {label:"They know of each other but don't actively coordinate",value:"partial",flags:["ADVISOR_SILO"],gapPts:5},
-     {label:"Each operates independently — no coordination",value:"no",flags:["ADVISOR_SILO"],gapPts:8},
-     {label:"I don't have all three types of advisors",value:"missing",flags:["ADVISOR_SILO","ADVISOR_GAP"],gapPts:8},
+     {label:"They know of each other but don't actively coordinate",value:"partial",flags:["ADVISOR_SILO"],gapPts:4},
+     {label:"Each operates independently — no coordination",value:"no",flags:["ADVISOR_SILO"],gapPts:6},
+     {label:"I don't have all three types of advisors yet",value:"missing",flags:["ADVISOR_SILO","ADVISOR_GAP"],gapPts:4},
    ]},
   // LITIGATION
   {id:"litigation",section:"Current Exposure",
@@ -517,18 +521,18 @@ const QS = [
    question:"If a creditor's attorney pulled your public records tomorrow — entity filings, property records, UCC searches — how confident are you in what they would find?",
    options:[
      {label:"Confident — I have a current reviewed structure and know exactly what is and isn't protected",value:"confident",flags:[]},
-     {label:"Somewhat — I have structures but haven't verified they would hold",value:"partial",flags:["UNVERIFIED"],gapPts:5},
-     {label:"Not confident — I know there are gaps I haven't addressed",value:"low",flags:["UNVERIFIED","UNREVIEWED"],gapPts:8},
-     {label:"I didn't know public records revealed this much",value:"unaware",flags:["UNVERIFIED","UNREVIEWED"],gapPts:10},
+     {label:"Somewhat — I have structures but haven't verified they would hold",value:"partial",flags:["UNVERIFIED"],gapPts:4},
+     {label:"Not confident — I know there are gaps I haven't addressed",value:"low",flags:["UNVERIFIED","UNREVIEWED"],gapPts:6},
+     {label:"I didn't know public records revealed this much",value:"unaware",flags:["UNVERIFIED","UNREVIEWED"],gapPts:8},
    ]},
   {id:"last_review",section:"The Bottom Line",
    question:"When did you last have an attorney conduct a structural review specifically for creditor exposure?",
    options:[
      {label:"Within the last year",value:"recent",flags:[]},
-     {label:"1 to 3 years ago",value:"mid",flags:["STALE_REVIEW"]},
-     {label:"Over 3 years ago",value:"old",flags:["STALE_REVIEW"]},
-     {label:"Never",value:"never",flags:["NEVER_REVIEWED"]},
-     {label:"I didn't know that was something people did",value:"unknown",flags:["NEVER_REVIEWED"]},
+     {label:"1 to 3 years ago",value:"mid",flags:["STALE_REVIEW"],gapPts:2},
+     {label:"Over 3 years ago",value:"old",flags:["STALE_REVIEW"],gapPts:3},
+     {label:"Never",value:"never",flags:["NEVER_REVIEWED"],gapPts:4},
+     {label:"I didn't know that was something people did",value:"unknown",flags:["NEVER_REVIEWED"],gapPts:4},
    ]},
 ];
 
@@ -555,13 +559,13 @@ function analyze(answers) {
 
   // Tier
   let tier, tColor, tLabel, tDesc;
-  if(score<=18){
+  if(score<=22){
     tier=1;tColor=C.green;tLabel="STRUCTURED";
     tDesc="Your current structure shows meaningful baseline protection across the areas we reviewed. This does not mean there are no gaps — it means the critical failures that create immediate creditor vulnerability are not present. A formal attorney review would confirm what is working and what should be monitored as your situation evolves.";
-  } else if(score<=42){
+  } else if(score<=48){
     tier=2;tColor=C.yellow;tLabel="GAPS PRESENT";
     tDesc="You have real structural vulnerabilities in specific areas identified below. These gaps will not announce themselves — they surface when a creditor event forces the issue. A determined plaintiff's attorney reviewing your public records would have at least one viable legal theory to pursue your personal assets right now.";
-  } else if(score<=68){
+  } else if(score<=72){
     tier=3;tColor=C.accent;tLabel="SIGNIFICANTLY EXPOSED";
     tDesc="Multiple structural vulnerabilities exist across your profile. A creditor's attorney reviewing your situation would have several independent legal theories to pursue your personal assets — and would not need all of them to succeed. The findings below identify specifically what is exposed and why. Most can be corrected before a triggering event occurs. After one, your options narrow significantly.";
   } else {
