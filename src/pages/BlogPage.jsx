@@ -1,13 +1,13 @@
 import { Link } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
 import { C } from '../tokens.js'
-import matter from 'gray-matter'
+import { parseFrontmatter } from '../utils/parseMd.js'
 
 const markdownFiles = import.meta.glob('/content/blog/*.md', { as: 'raw', eager: true })
 
 const ARTICLES = Object.entries(markdownFiles)
   .map(([path, raw]) => {
-    const { data } = matter(raw)
+    const { data } = parseFrontmatter(raw)
     const slug = path.replace('/content/blog/', '').replace('.md', '')
     return { slug, ...data }
   })
