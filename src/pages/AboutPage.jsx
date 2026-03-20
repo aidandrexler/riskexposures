@@ -39,13 +39,13 @@ export default function AboutPage() {
 
         <div className="fade-up" style={{ marginBottom: '2.5rem' }}>
           <p style={{ fontSize: '1rem', color: C.textMid, lineHeight: 1.82, fontFamily: "'DM Sans', sans-serif", marginBottom: '1.25rem' }}>
-            Risk Exposures is a free public diagnostic tool for high-net-worth individuals, business owners, physicians, and professionals who want to understand their structural risk exposure — honestly, specifically, and without a sales pitch.
+            Risk Exposures is a free public diagnostic tool for high-net-worth individuals, business owners, and professionals who want to understand their structural risk exposure — honestly, specifically, and without a sales pitch.
           </p>
           <p style={{ fontSize: '1rem', color: C.textMid, lineHeight: 1.82, fontFamily: "'DM Sans', sans-serif", marginBottom: '1.25rem' }}>
-            The tool runs a 30+ question assessment covering entity structure, asset titling, transfer history, insurance gaps, Florida-specific exemptions, and — for physician practice owners — practice-level risks including payer concentration, billing compliance, and malpractice coverage. It produces a personalized risk score with specific findings, legal citations, and a matched specialist referral based on the profile.
+            The tool runs a 30+ question assessment covering entity structure, asset titling, transfer history, insurance gaps, and Florida-specific exemptions. For certain professional profiles, it also evaluates practice-level and profession-specific risks. It produces a personalized risk score with specific findings, legal citations, and a matched specialist referral based on the profile.
           </p>
           <p style={{ fontSize: '1rem', color: C.textMid, lineHeight: 1.82, fontFamily: "'DM Sans', sans-serif", marginBottom: '1.25rem' }}>
-            It is built on the analytical frameworks used by Florida's leading asset protection and physician planning attorneys — including the FMEA-based risk scoring methodology, the Founding Case Pattern for physician practice risk, and the Florida creditor protection exemption architecture.
+            It is built on the analytical frameworks used by Florida's leading asset protection and estate planning attorneys — including FMEA-based risk scoring methodology and the Florida creditor protection exemption architecture.
           </p>
         </div>
 
@@ -59,10 +59,13 @@ export default function AboutPage() {
         <div className="fade-up" style={{ marginBottom: '2.5rem' }}>
           <h2 className="serif" style={{ fontSize: '1.4rem', fontWeight: 500, color: C.text, marginBottom: '1rem' }}>How the referral works</h2>
           <p style={{ fontSize: '0.96rem', color: C.textMid, lineHeight: 1.82, fontFamily: "'DM Sans', sans-serif", marginBottom: '1.25rem' }}>
-            When you complete the diagnostic and submit your email, a full intake summary is reviewed and — if the profile is a genuine fit — forwarded to the matched specialist with a personal note. Every referral gets a unique reference number tied to the date of the diagnostic. Nothing is forwarded automatically and nothing reaches the specialist without a human review first.
+            When you complete the diagnostic and submit your email, your profile is reviewed and — where there is a strong match — referred to the appropriate specialist. Each referral includes a unique reference number tied to the date of your diagnostic. Referrals are not made automatically; only profiles that meet a meaningful threshold are forwarded.
           </p>
           <p style={{ fontSize: '0.96rem', color: C.textMid, lineHeight: 1.82, fontFamily: "'DM Sans', sans-serif", marginBottom: '1.25rem' }}>
-            The referral specialists — Jon Alper at Alper Law and Alan Gassman at Gassman, Denicolo & Ketron — are independent attorneys who are not affiliated with this tool and do not pay for referrals. They are matched based on profile fit, not commercial arrangement.
+            That said — you do not need to wait. The matched specialist is shown directly in your results with their contact information. You can reach out on your own at any time. The reference number in your results connects your profile to this diagnostic if you choose to mention it.
+          </p>
+          <p style={{ fontSize: '0.96rem', color: C.textMid, lineHeight: 1.82, fontFamily: "'DM Sans', sans-serif" }}>
+            Jon Alper at Alper Law and Alan Gassman at Gassman, Denicolo & Ketron are independent attorneys who are not affiliated with this tool and do not pay for referrals. They are matched based on profile fit, not commercial arrangement.
           </p>
         </div>
 

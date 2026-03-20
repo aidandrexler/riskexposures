@@ -50,12 +50,14 @@ export default function PrivacyPage() {
           </Section>
 
           <Section title="How we use it">
-            <p style={{ marginBottom: '0.75rem' }}>Your diagnostic intake summary is reviewed by the site operator (Aidan Drexler) to determine whether your profile is a genuine fit for a specialist referral. If it is, a summary may be forwarded to the matched specialist attorney — Jon Alper at Alper Law or Alan Gassman at Gassman, Denicolo &amp; Ketron — with a personal note. Nothing is forwarded automatically.</p>
+            <p style={{ marginBottom: '0.75rem' }}>Your diagnostic intake summary is reviewed by the site operator to determine whether your profile is a fit for a specialist referral. If it is, a summary may be forwarded to the matched specialist attorney — Jon Alper at Alper Law or Alan Gassman at Gassman, Denicolo &amp; Ketron — with a personal note. Nothing is forwarded automatically; only profiles that meet a meaningful threshold are forwarded.</p>
+            <p style={{ marginBottom: '0.75rem' }}>No one will contact you directly as a result of completing this diagnostic. If you wish to speak with the matched specialist shown in your results, you must reach out to them independently using the contact information provided. The referral process is entirely one-directional — you initiate any conversation.</p>
             <p>Your email address is used only to identify your submission. We do not send marketing emails, newsletters, or promotional communications.</p>
           </Section>
 
           <Section title="Who we share it with">
-            <p style={{ marginBottom: '0.75rem' }}>Your intake summary may be shared with the matched specialist attorney identified in your results, solely for the purpose of evaluating whether to schedule a consultation. The reference number in your summary is your confirmation that the referral originated from this diagnostic on the date shown.</p>
+            <p style={{ marginBottom: '0.75rem' }}>Your intake summary may be shared with the matched specialist attorney identified in your results, solely for the purpose of evaluating whether to schedule a consultation if you reach out. The reference number in your summary is your confirmation that the referral originated from this diagnostic on the date shown.</p>
+            <p style={{ marginBottom: '0.75rem' }}>Your intake data is transmitted via encrypted connection and is not sold or shared with any party other than the matched specialist described above.</p>
             <p style={{ marginBottom: '0.75rem' }}>We use Formspree (formspree.io) to process form submissions. Formspree's privacy policy governs how they handle data in transit.</p>
             <p>We use Google Analytics to understand how people use the site. Google's privacy policy governs that data collection. You can opt out of Google Analytics tracking at tools.google.com/dlpage/gaoptout.</p>
           </Section>
