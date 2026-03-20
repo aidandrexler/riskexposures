@@ -1050,7 +1050,23 @@ export default function RiskExposures() {
         {/* Sticky CTA */}
         <div style={{position:"fixed",bottom:0,left:0,right:0,background:C.surface,borderTop:`1px solid ${C.border}`,padding:"0.875rem 2rem",display:"flex",justifyContent:"center",alignItems:"center",gap:"1.5rem",zIndex:100,flexWrap:"wrap"}}>
           <span style={{fontSize:"0.83rem",color:C.textMid}}>Ready to address what we found?</span>
-          <a href={ref.url} target="_blank" rel="noopener noreferrer" className="pri-btn">Speak with a Specialist →</a>
+          <a
+              href={ref.url+"?utm_source=riskexposures&utm_medium=referral&utm_campaign=diagnostic&utm_content=sticky-cta"}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="pri-btn"
+              onClick={()=>{
+                if(typeof gtag!=="undefined"){
+                  gtag("event","referral_click",{
+                    attorney: ref.name,
+                    firm: ref.firm,
+                    risk_tier: tLabel,
+                    risk_score: score,
+                    location: "sticky_cta",
+                  });
+                }
+              }}
+            >Speak with a Specialist →</a>
         </div>
 
         <div style={{maxWidth:"760px",margin:"0 auto",padding:"3rem 2rem 9rem"}}>
@@ -1162,7 +1178,23 @@ export default function RiskExposures() {
                 <p style={{fontSize:"0.845rem",color:C.textMid,lineHeight:1.65}}><strong>{ref.secondary.name}</strong> — {ref.secondary.note}</p>
               </div>
             )}
-            <a href={ref.url} target="_blank" rel="noopener noreferrer" className="pri-btn">Speak with a Specialist →</a>
+            <a
+              href={ref.url+"?utm_source=riskexposures&utm_medium=referral&utm_campaign=diagnostic&utm_content="+ref.name.toLowerCase().replace(/\s+/g,"-")}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="pri-btn"
+              onClick={()=>{
+                if(typeof gtag!=="undefined"){
+                  gtag("event","referral_click",{
+                    attorney: ref.name,
+                    firm: ref.firm,
+                    risk_tier: tLabel,
+                    risk_score: score,
+                    planning_window: uLabel,
+                  });
+                }
+              }}
+            >Speak with a Specialist →</a>
           </div>
 
           {/* Email capture */}
@@ -1177,18 +1209,43 @@ export default function RiskExposures() {
                   <input type="email" placeholder="your@email.com" value={email} onChange={e=>setEmail(e.target.value)} className="email-inp"/>
                   <button onClick={async()=>{
                     if(!email.includes("@")) return;
+                    const refNum = "RE-"+Date.now().toString(36).toUpperCase().slice(-8);
                     try {
+                      // Intake summary to Aidan's inbox
                       await fetch("https://formspree.io/f/xvzwldoa", {
                         method:"POST",
                         headers:{"Content-Type":"application/json","Accept":"application/json"},
                         body: JSON.stringify({
                           email: email,
+                          reference_number: refNum,
                           intake_summary: results?.summary || "",
                           score: results?.score,
                           tier: results?.tLabel,
                           planning_window: results?.uLabel,
+                          matched_specialist: ref.name+" — "+ref.firm,
                         })
                       });
+                      // Confirmation email to user
+                      await fetch("https://formspree.io/f/xvzwldoa", {
+                        method:"POST",
+                        headers:{"Content-Type":"application/json","Accept":"application/json"},
+                        body: JSON.stringify({
+                          _replyto: email,
+                          email: email,
+                          subject: "Your Risk Exposure Analysis — "+refNum,
+                          message: "Your Risk Exposures diagnostic is complete.\n\nReference: "+refNum+"\nRisk Tier: "+results?.tLabel+"\nPlanning Window: "+results?.uLabel+"\nMatched Specialist: "+ref.name+", "+ref.firm+"\nContact: "+ref.phone+" | "+ref.email+"\n\nKeep this email as a record of your diagnostic date and matched specialist.\n\n— Risk Exposures\nriskexposures.com",
+                        })
+                      });
+                      // Log to GA4
+                      if(typeof gtag!=="undefined"){
+                        gtag("event","diagnostic_complete",{
+                          risk_tier: results?.tLabel,
+                          risk_score: results?.score,
+                          planning_window: results?.uLabel,
+                          matched_specialist: ref.name,
+                          reference_number: refNum,
+                        });
+                      }
                     } catch(e){ console.error(e); }
                     setEmailDone(true);
                   }} className="pri-btn" style={{borderRadius:"0 3px 3px 0",padding:"0 1.5rem"}}>Send Report</button>
@@ -1197,7 +1254,7 @@ export default function RiskExposures() {
             ):(
               <div style={{textAlign:"center",padding:"0.5rem 0"}}>
                 <div className="serif" style={{fontSize:"1.1rem",color:C.green,marginBottom:"0.4rem"}}>Report on its way.</div>
-                <p style={{fontSize:"0.855rem",color:C.textDim}}>Check {email} for your complete Risk Exposure Analysis.</p>
+                <p style={{fontSize:"0.855rem",color:C.textDim}}>Check {email} — your complete Risk Exposure Analysis is on its way, including your reference number and matched specialist contact information.</p>
               </div>
             )}
           </div>
