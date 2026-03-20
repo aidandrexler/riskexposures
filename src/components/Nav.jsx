@@ -58,6 +58,7 @@ export default function Nav() {
           {[
             { label: 'Diagnostic', path: '/diagnostic' },
             { label: 'Blog', path: '/blog' },
+            { label: 'About', path: '/about' },
           ].map(({ label, path }) => (
             <Link key={path} to={path} style={{
               fontFamily: "'DM Sans', sans-serif",

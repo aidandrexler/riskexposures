@@ -45,21 +45,24 @@ export default function Footer() {
             <div>
               <p style={{ fontSize: '0.68rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: C.textMuted, marginBottom: '0.75rem', fontFamily: "'DM Sans', sans-serif" }}>Tools</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <Link to="/diagnostic" style={{ fontSize: '0.83rem', color: C.textMid, fontFamily: "'DM Sans', sans-serif" }}>Risk Diagnostic</Link>
-                <Link to="/blog" style={{ fontSize: '0.83rem', color: C.textMid, fontFamily: "'DM Sans', sans-serif" }}>Resources</Link>
+                <Link to="/diagnostic" style={{ fontSize: '0.83rem', color: C.textMid, fontFamily: "'DM Sans', sans-serif", textDecoration: 'none' }}>Risk Diagnostic</Link>
+                <Link to="/blog" style={{ fontSize: '0.83rem', color: C.textMid, fontFamily: "'DM Sans', sans-serif", textDecoration: 'none' }}>Resources</Link>
+              </div>
+            </div>
+            <div>
+              <p style={{ fontSize: '0.68rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: C.textMuted, marginBottom: '0.75rem', fontFamily: "'DM Sans', sans-serif" }}>Company</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <Link to="/about" style={{ fontSize: '0.83rem', color: C.textMid, fontFamily: "'DM Sans', sans-serif", textDecoration: 'none' }}>About</Link>
+                <Link to="/privacy" style={{ fontSize: '0.83rem', color: C.textMid, fontFamily: "'DM Sans', sans-serif", textDecoration: 'none' }}>Privacy Policy</Link>
               </div>
             </div>
           </div>
         </div>
-        <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: '1.5rem' }}>
-          <p style={{
-            fontFamily: "'DM Sans', sans-serif",
-            fontSize: '0.72rem',
-            color: C.textMuted,
-            lineHeight: 1.65,
-          }}>
+        <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '0.72rem', color: C.textMuted, lineHeight: 1.65, maxWidth: '600px' }}>
             This website provides educational and informational content only. Nothing on this site constitutes legal advice or creates an attorney-client relationship. Results of the diagnostic tool are for educational purposes and should not be relied upon as legal opinions. Always consult a licensed attorney for advice specific to your situation.
           </p>
+          <Link to="/privacy" style={{ fontSize: '0.72rem', color: C.textMuted, fontFamily: "'DM Sans', sans-serif", textDecoration: 'none', whiteSpace: 'nowrap' }}>Privacy Policy</Link>
         </div>
       </div>
     </footer>

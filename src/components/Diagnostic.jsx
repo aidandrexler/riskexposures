@@ -771,41 +771,72 @@ function analyze(answers) {
   }
 
   // ─── REFERRAL ROUTING ─────────────────────────────────────────────────────
-  // TO CHANGE: edit the attorney objects below
-  // TO ADD A NEW ATTORNEY: add a new condition above the default
-  // TO ROUTE EVERYONE TO ONE ATTORNEY: set ref = ATTORNEYS.alper or ref = ATTORNEYS.gassman for all cases
-  // OFFSHORE TRIGGER: fires when OFFSHORE_URGENT or (OFFSHORE_OPEN + OFFSHORE_QUALIFIED + tier >= 3)
+  // TO CHANGE: edit attorney objects below
+  // GASSMAN: physician with practice risk OR coordinated estate/tax/business complexity
+  // ALPER: pure domestic or offshore AP — including physicians with structural-only issues
+  // OFFSHORE: OFFSHORE_URGENT or (OFFSHORE_OPEN + OFFSHORE_QUALIFIED + tier >= 3)
   const isPhys = F.has("PHYSICIAN");
   const isOffshoreUrgent = F.has("OFFSHORE_URGENT")||F.has("ACTIVE_JUDGMENT");
   const isOffshoreQualified = (F.has("OFFSHORE_OPEN")&&F.has("OFFSHORE_QUALIFIED")&&tier>=3);
   const isOffshore = isOffshoreUrgent||isOffshoreQualified;
-  const isComplex = isPhys||F.has("ESTATE_TAX")||F.has("LIQUIDITY_EVENT");
+  const hasCoordination = F.has("ADVISOR_SILO")||F.has("ESTATE_TAX")||F.has("LIQUIDITY_EVENT")||F.has("STALE_BENE");
+  const hasPracticeRisk = F.has("FOUNDING_CASE")||F.has("PAYER_CONC")||F.has("TAIL_GAP")||F.has("STARK")||F.has("PAYROLL_TAX")||F.has("CARRIER_RISK");
+  const isGassmanProfile = isPhys && (hasPracticeRisk || hasCoordination);
+  const isComplex = F.has("ESTATE_TAX")||F.has("LIQUIDITY_EVENT");
 
   // Build profile-specific referral reason
-  const activeFlags = displayFindings.map(f=>f.title);
-  const flagCount = activeFlags.length;
+  const criticalCount = displayFindings.filter(f=>f.sev==="critical").length;
+  const highCount = displayFindings.filter(f=>f.sev==="high").length;
+  const flagCount = displayFindings.length;
+
+  // Use short flag names for referral reason, not full finding titles
+  const topFlagNames = [...F].filter(f=>[
+    "SCORP_RISK","NO_ENTITY","COMMINGLING","VEIL_PIERCE","PAYROLL_TAX","FOUNDING_CASE",
+    "BADGES_FRAUD","TAIL_GAP","CARRIER_RISK","STARK","GUARANTEE_CRIT","FBAR_RISK",
+    "FL_HOMESTEAD_DESTROYED","REV_TRUST_MYTH","RE_PERSONAL","ACTIVE_JUDGMENT"
+  ].includes(f)).slice(0,3).map(f=>({
+    "SCORP_RISK":"PA or S-corp entity with no charging order protection",
+    "NO_ENTITY":"no formal entity structure",
+    "COMMINGLING":"commingling and veil-piercing exposure",
+    "VEIL_PIERCE":"veil-piercing risk",
+    "PAYROLL_TAX":"payroll tax personal liability",
+    "FOUNDING_CASE":"payer concentration cascade risk",
+    "BADGES_FRAUD":"fraudulent transfer exposure",
+    "TAIL_GAP":"malpractice tail coverage gap",
+    "CARRIER_RISK":"carrier financial strength unconfirmed",
+    "STARK":"Stark Law documentation gap",
+    "GUARANTEE_CRIT":"personal guarantees over $500K",
+    "FBAR_RISK":"foreign asset reporting exposure",
+    "FL_HOMESTEAD_DESTROYED":"homestead exemption destroyed by LLC transfer",
+    "REV_TRUST_MYTH":"revocable trust misconception",
+    "RE_PERSONAL":"investment real estate in personal name",
+    "ACTIVE_JUDGMENT":"entered judgment requiring immediate action",
+  }[f]||f)).filter(Boolean);
 
   let ref;
   if(isOffshoreUrgent){
-    // Offshore urgent — Alper primary regardless of other profile
     const offshoreReason = F.has("ACTIVE_JUDGMENT")
-      ? `Your profile shows an entered judgment with significant liquid assets — the specific combination Jon Alper described as the scenario worth calling him about. Post-judgment offshore planning is the most technically complex and time-sensitive work in asset protection. Alper Law has handled this pattern specifically and repeatedly. The window for what is still possible narrows from the date of this call.`
-      : `Your profile combines a specific creditor threat with liquid assets above the threshold where offshore planning becomes cost-effective. This is the client profile Alper Law is built for — not a general high-net-worth individual looking for protection, but a specific situation where domestic options alone may be insufficient.`;
+      ? `Your profile shows an entered judgment with significant liquid assets — the specific combination that warrants immediate consultation with a pure asset protection specialist. Post-judgment planning is the most technically complex and time-sensitive work in this field, and Alper Law has handled this pattern specifically since 1991. The window for what is still possible narrows from the date of this conversation.`
+      : `Your profile combines a specific creditor threat with liquid assets above the threshold where offshore planning becomes cost-effective. Alper Law practices exclusively in asset protection — domestic Florida exemption planning, entity structuring, and Cook Islands offshore trusts — and will tell you directly whether your situation warrants offshore structures or whether domestic planning is sufficient.`;
     ref={name:"Jon Alper",firm:"Alper Law",
       location:"Lake Mary, FL — virtual consultations available nationwide",
       url:"https://www.alperlaw.com/schedule/",phone:"(407) 444-0404",email:"help@alperlaw.com",
       reason:offshoreReason,
-      secondary: isPhys||isComplex ? {name:"Alan Gassman",firm:"Gassman, Denicolo & Ketron, P.A.",url:"https://gassmanlaw.com",note:"Given your physician/comprehensive planning profile, Alan Gassman should also be consulted for the practice and estate planning dimensions of your situation."} : null};
-  } else if(isPhys||isComplex){
-    const physReason = isPhys
-      ? `Your profile has ${flagCount} findings, ${displayFindings.filter(f=>f.sev==="critical").length} of which are critical. The specific combination — ${activeFlags.slice(0,2).join("; ")} — maps directly to the physician practice planning work Gassman's firm is built around. He has written the definitive Florida physician protection treatise, has represented hundreds of Florida physician practice owners, and has been named Bloomberg Tax's Contributor of the Year. This is not a generalist referral. The findings in your profile are the specific problems his practice handles.`
-      : `Your profile indicates a need for coordinated planning across estate, tax, business structure, and creditor protection. Gassman's firm handles all of these dimensions in a single integrated engagement — which is specifically what eliminates the advisor coordination failures that create most of the catastrophic planning outcomes we see.`;
+      secondary: isGassmanProfile ? {name:"Alan Gassman",firm:"Gassman, Denicolo & Ketron, P.A.",url:"https://gassmanlaw.com",note:"Given your physician practice profile, Alan Gassman at Gassman, Denicolo & Ketron should also be consulted for the estate planning, tax, and practice structuring dimensions of your situation."} : null};
+  } else if(isGassmanProfile){
+    const gasReason = `Your profile has ${flagCount} finding${flagCount!==1?"s":""}, ${criticalCount} critical${topFlagNames.length>0?" — including "+topFlagNames.slice(0,2).join(" and "):""}. Gassman, Denicolo & Ketron is a Clearwater firm focusing on estate planning, taxation, business law, and asset structuring for physicians, business owners, and high-net-worth families. Alan Gassman is board certified in Estate Planning and Trusts Law, holds an LL.M. in Taxation, and has co-chaired the Florida Bar's Physician Representation seminar for over fifteen years. When your situation requires estate planning, tax, and creditor protection to work together — which yours does — this is the right firm.`;
     ref={name:"Alan Gassman",firm:"Gassman, Denicolo & Ketron, P.A.",location:"Clearwater, FL",
       url:"https://gassmanlaw.com",phone:"(727) 442-1200",email:"agassman@gassmanpa.com",
-      reason:physReason,
-      secondary: isOffshoreQualified ? {name:"Jon Alper",firm:"Alper Law",url:"https://alperlaw.com",note:"Your net worth profile and openness to offshore structures also warrants a conversation with Jon Alper at Alper Law — Florida's leading offshore trust attorney."} : null};
+      reason:gasReason,
+      secondary: isOffshoreQualified ? {name:"Jon Alper",firm:"Alper Law",url:"https://alperlaw.com",note:"Your profile also warrants a conversation about offshore planning. Jon Alper at Alper Law practices exclusively in domestic and offshore asset protection."} : null};
+  } else if(isComplex){
+    const complexReason = `Your profile indicates coordinated planning across estate, tax, and business structure${topFlagNames.length>0?" — specifically "+topFlagNames[0]:""}. Gassman, Denicolo & Ketron handles estate planning, taxation, and business structuring for high-net-worth families and business owners as an integrated engagement — which is what your situation requires.`;
+    ref={name:"Alan Gassman",firm:"Gassman, Denicolo & Ketron, P.A.",location:"Clearwater, FL",
+      url:"https://gassmanlaw.com",phone:"(727) 442-1200",email:"agassman@gassmanpa.com",
+      reason:complexReason,
+      secondary: isOffshoreQualified ? {name:"Jon Alper",firm:"Alper Law",url:"https://alperlaw.com",note:"Your profile also warrants a conversation about offshore planning with Jon Alper at Alper Law."} : null};
   } else {
-    const alperReason = `Your profile has ${flagCount} finding${flagCount!==1?"s":""} that require a pure asset protection specialist, not a generalist. ${activeFlags.length>0?`The primary issues — ${activeFlags.slice(0,2).join("; ")} — are exactly the structural problems Alper Law has been solving since 1991.`:"Alper Law handles pure asset protection work — no estate planning, no tax, no generalist services."} Jon and Gideon Alper personally handle every consultation. If your structure has gaps, they will identify them precisely. If it doesn't, they will tell you that too — they regularly turn away clients who don't need them.`;
+    const alperReason = `Your profile has ${flagCount} finding${flagCount!==1?"s":""} that require a pure asset protection specialist${topFlagNames.length>0?" — including "+topFlagNames.slice(0,2).join(" and "):""}. Alper Law has practiced exclusively in asset protection since 1991 — Florida statutory exemptions, entity structuring, charging order protection, and offshore trusts when warranted. Jon and Gideon Alper personally handle every consultation. They will tell you directly what is exposed, what can be fixed, and whether the cost of additional planning is justified. They regularly tell clients they don't need more planning. That honesty is the point.`;
     ref={name:"Jon Alper",firm:"Alper Law",
       location:"Lake Mary, FL — virtual consultations available nationwide",
       url:"https://www.alperlaw.com/schedule/",phone:"(407) 444-0404",email:"help@alperlaw.com",
@@ -1211,7 +1242,6 @@ export default function RiskExposures() {
                     if(!email.includes("@")) return;
                     const refNum = "RE-"+Date.now().toString(36).toUpperCase().slice(-8);
                     try {
-                      // Intake summary to Aidan's inbox
                       await fetch("https://formspree.io/f/xvzwldoa", {
                         method:"POST",
                         headers:{"Content-Type":"application/json","Accept":"application/json"},
@@ -1225,18 +1255,6 @@ export default function RiskExposures() {
                           matched_specialist: ref.name+" — "+ref.firm,
                         })
                       });
-                      // Confirmation email to user
-                      await fetch("https://formspree.io/f/xvzwldoa", {
-                        method:"POST",
-                        headers:{"Content-Type":"application/json","Accept":"application/json"},
-                        body: JSON.stringify({
-                          _replyto: email,
-                          email: email,
-                          subject: "Your Risk Exposure Analysis — "+refNum,
-                          message: "Your Risk Exposures diagnostic is complete.\n\nReference: "+refNum+"\nRisk Tier: "+results?.tLabel+"\nPlanning Window: "+results?.uLabel+"\nMatched Specialist: "+ref.name+", "+ref.firm+"\nContact: "+ref.phone+" | "+ref.email+"\n\nKeep this email as a record of your diagnostic date and matched specialist.\n\n— Risk Exposures\nriskexposures.com",
-                        })
-                      });
-                      // Log to GA4
                       if(typeof gtag!=="undefined"){
                         gtag("event","diagnostic_complete",{
                           risk_tier: results?.tLabel,
@@ -1248,13 +1266,36 @@ export default function RiskExposures() {
                       }
                     } catch(e){ console.error(e); }
                     setEmailDone(true);
+                    // store refNum for display
+                    window._reRef = refNum;
                   }} className="pri-btn" style={{borderRadius:"0 3px 3px 0",padding:"0 1.5rem"}}>Send Report</button>
                 </div>
               </>
             ):(
-              <div style={{textAlign:"center",padding:"0.5rem 0"}}>
-                <div className="serif" style={{fontSize:"1.1rem",color:C.green,marginBottom:"0.4rem"}}>Report on its way.</div>
-                <p style={{fontSize:"0.855rem",color:C.textDim}}>Check {email} — your complete Risk Exposure Analysis is on its way, including your reference number and matched specialist contact information.</p>
+              <div style={{padding:"0.25rem 0"}}>
+                <div style={{display:"flex",alignItems:"center",gap:"0.6rem",marginBottom:"1rem"}}>
+                  <div style={{width:"20px",height:"20px",borderRadius:"50%",background:C.green,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                    <span style={{color:"#fff",fontSize:"0.7rem",fontWeight:700}}>✓</span>
+                  </div>
+                  <div className="serif" style={{fontSize:"1.05rem",color:C.green}}>Your intake has been received.</div>
+                </div>
+                <div style={{background:C.surfaceAlt,border:`1px solid ${C.border}`,borderRadius:"3px",padding:"1.1rem 1.25rem",marginBottom:"1rem"}}>
+                  <div style={{display:"grid",gridTemplateColumns:"auto 1fr",gap:"0.3rem 1rem",fontSize:"0.82rem",fontFamily:"'DM Sans',sans-serif"}}>
+                    <span style={{color:C.textMuted}}>Reference</span>
+                    <span style={{color:C.text,fontWeight:500}}>{window._reRef||"RE-"+Date.now().toString(36).toUpperCase().slice(-6)}</span>
+                    <span style={{color:C.textMuted}}>Risk Tier</span>
+                    <span style={{color:tColor,fontWeight:500}}>{tLabel}</span>
+                    <span style={{color:C.textMuted}}>Matched Specialist</span>
+                    <span style={{color:C.text,fontWeight:500}}>{ref.name}</span>
+                    <span style={{color:C.textMuted}}>Phone</span>
+                    <span style={{color:C.text}}>{ref.phone}</span>
+                    <span style={{color:C.textMuted}}>Email</span>
+                    <span style={{color:C.text}}>{ref.email}</span>
+                  </div>
+                </div>
+                <p style={{fontSize:"0.8rem",color:C.textDim,lineHeight:1.6}}>
+                  Save your reference number — it ties your diagnostic profile to this date. When you contact {ref.name}, mentioning this reference number confirms where you came from and what your profile showed.
+                </p>
               </div>
             )}
           </div>
