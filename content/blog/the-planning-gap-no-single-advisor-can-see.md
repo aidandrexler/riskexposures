@@ -1,8 +1,9 @@
 ---
 title: The Planning Gap No Single Advisor Can See
 date: March 25, 2026
-description: "The most preventable catastrophic planning failures result from
-  advisors working in silos. "
+description: The most preventable catastrophic planning failures result from
+  advisors working in silos. Your CPA, financial advisor, and estate attorney
+  each see one dimension of a three-dimensional problem.
 readTime: 5 min read
 ---
 Consider three advisors working for the same client. The CPA has structured the client's business income to minimize self-employment taxes, recommending that salary be kept low and income taken primarily as distributions. The financial advisor has built a portfolio of investment accounts titled jointly with the client's spouse. The estate planning attorney has drafted a revocable living trust and recommended that most accounts be retitled into the trust.
